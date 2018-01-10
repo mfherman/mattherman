@@ -50,3 +50,5 @@ type = "#97d28b"
 special = "#ffcb8d"
 value = "#96c2d7"
 statement = "#ff8e91"
+
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]

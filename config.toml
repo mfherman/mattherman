@@ -1,4 +1,4 @@
-baseurl = "/"
+baseurl = "https://mattherman.netlify.com/”)."
 theme = "cocoa-eh-hugo-theme"
 builddrafts = true
 canonifyurls = true

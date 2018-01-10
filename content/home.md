@@ -2,6 +2,6 @@
 title = "Home"
 +++
 
-_This is the home page. It will display the blog section if there is one, and a text before._
+I am a graduate student in the [Applied Social Research Program](http://www.hunter.cuny.edu/sociology/graduate/graduate-program-in-applied-social-research") at Hunter College in New York City. I'm interested in using quantitaive research methods to better understand the provision and delivery of social services.
 
-Hey ! Welcome to the **Cocoa Enhanced theme**. Here are some articles :
+Currently, I am working on a project in collaboration with the [Center for Innovation through Data Intelligence](http://www1.nyc.gov/site/cidi/about/about.page) and the NYC Department of Homeless Services that seeks to predict the individual risk of shelter entry using Natural Language Processing of homelessness prevention case notes.

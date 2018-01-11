@@ -2,6 +2,10 @@
 title = "Home"
 +++
 
-I am a graduate student in the [Applied Social Research Program](http://www.hunter.cuny.edu/sociology/graduate/graduate-program-in-applied-social-research") at Hunter College in New York City. I'm interested in using quantitaive research methods to better understand the provision and delivery of social services.
+I am a graduate student in the [Applied Social Research program](http://www.hunter.cuny.edu/sociology/graduate/graduate-program-in-applied-social-research") at Hunter College in New York City. I'm interested in using quantitative research to better understand the provision and delivery of social services. My coursework in the Sociology and Geography departments has focused on research methods including statistical analysis, geographic information science, and program evaluation.
 
 Currently, I am working on a project in collaboration with the [Center for Innovation through Data Intelligence](http://www1.nyc.gov/site/cidi/about/about.page) and the NYC Department of Homeless Services that seeks to predict the individual risk of shelter entry using Natural Language Processing of homelessness prevention case notes.
+
+Prior to beginning my graduate program, I spent five years recording oral histories with [StoryCorps](https://storycorps.org/) and helped to start a butcher shop and salumeria in Brooklyn, NY called [Ends Meat](https://www.endsmeatnyc.com/). I received my B.A. in American Studies from Columbia University in 2006.
+
+Get in touch at [mfherman@gmail.com](mailto:mfherman@gmail.com).

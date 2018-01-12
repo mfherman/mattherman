@@ -3,10 +3,10 @@ title: How many women in New York are pregnant right now?
 author:
 date: "2018-01-11"
 slug: nys-pregnancy
+draft: true
 tags:
   - R
   - mapping
-draft: true
 ---
 
 When I found out that J was pregnant, my first thought was OMG, I'm so excited to be a dad! My second(ish) thought was, I wonder how many other women in New York are also pregnant right now?

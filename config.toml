@@ -1,6 +1,6 @@
 baseurl = "https://mattherman.info/"
 theme = "cocoa-eh-hugo-theme"
-builddrafts = true
+builddrafts = false
 canonifyurls = true
 contentdir = "content"
 languageCode = "en-US"

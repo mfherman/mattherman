@@ -1,0 +1,157 @@
+---
+title: How many women in New York are pregnant right now?
+author:
+date: "2018-01-16"
+slug: nys-pregnancy
+draft: true
+tags:
+  - rstats
+  - mapping
+  - census
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, 
+                      echo = TRUE, dpi = 180, cache.lazy = FALSE)
+options(width = 80, dplyr.width = 150)
+library(tidyverse)
+library(rvest)
+library(sf)
+library(tidycensus)
+```
+
+When I found out that J was pregnant, my first thought was OMG, I'm so excited to be a dad! My second thought was, I wonder *how many other women in New York are also pregnant right now?* Knowing that there was plenty of health and demographic public data available, I was pretty sure I could answer this question.
+
+After a little googling, I found [this brief](https://www.cdc.gov/reproductivehealth/emergency/pdfs/PregnacyEstimatoBrochure508.pdf) from the Centers for Disease Control and Prevention (CDC) which details how to estimate the number of pregnant women in a geographic area. Bingo!
+
+To calculate the number of pregnant women in a given area, you need to specify four parameters:
+
+* Number of women of reproductive age [WRA] \(15 – 44 years old)
+* Fertility rate (live births per 1,000 WRA)
+* Abortion rate (induced abortions per 1,000 WRA)
+* Fetal loss rate (fetal deaths per 1,000 WRA)
+
+With these parameters, there is a very simple calculation to arrive at the total number of women who are pregnant. Given the following variables:
+
+
+$$
+\begin{aligned}
+wra ={} & \text{women of reproductive age}\\
+b ={} & \text{fertility rate (births)}\\
+a ={} & \text{abortion rate} \\
+d ={} & \text{fetal loss rate (deaths)} \\
+P ={} & \text{proportion of the year a woman} \\
+      & \text{is pregnant for each outcome} \\
+      & P_b\colon \text{ 9 months} = .75 \\
+      & P_a\colon \text{ 2 months} = .167 \\
+      & P_d\colon \text{ 3 months} = .25
+\end{aligned}
+$$
+
+The equation to estimate the number of women who live in a given geographical area that are currently pregnant is:
+
+$$
+\begin{aligned}
+wra/1000 \times ((b \times P_b) + (a \times P_a) + (d \times P_d))
+\end{aligned}
+$$
+
+Following the CDC guidance, I determined the best and most recent sources of data for each of these parameters for New York State:
+
+* NYS Department of Health Vital Statistics, 2015, [Table 1a](https://www.health.ny.gov/statistics/vital_statistics/2015/table01a.htm)
+* NYS Department of Health Vital Statistics, 2015, [Table 7](https://www.health.ny.gov/statistics/vital_statistics/2015/table07.htm)
+* NYS Department of Health Vital Statistics, 2015, [Table 21](https://www.health.ny.gov/statistics/vital_statistics/2015/table21.htm)
+* CDC National Vital Statistics Reports, 2012, [Table 1](https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf)[^abortrate]
+
+[^abortrate]: The CDC recommend that that national fetal loss rate be used as it does not vary systematically by geography and the CDC national estimate is likely more accurate than state Deaprtments of Health.
+
+The NYS Department of Health report this data at the county level, so I will calculate results for each of New York's 62 counties.[^essexham] I will also use socidemogaphic data from the American Community Survey to contextulize the results.
+
+[^essexham]: Due to the small number of abortions in Essex and Hamilton Counties, the NYS Department of Health reports combined numbers for these counties to protect privacy. Therefore, I aggregate all rates and calculations for these two counties.
+
+Let's get to it!
+
+The first step is to scrape and clean the vital statistics data from the [NYS Department of Health website](https://www.health.ny.gov/statistics/vital_statistics/2015/).
+
+```{r scrape}
+library(tidyverse)
+library(rvest)
+
+# nys health data lives here
+health_web <- "https://www.health.ny.gov/statistics/vital_statistics/2015/"
+
+# each parameter lives in a table on a different page
+pop <- read_html(paste0(health_web, "table01a.htm"))
+birth <- read_html(paste0(health_web, "table07.htm"))
+abort <- read_html(paste0(health_web, "table21.htm"))
+```
+
+```{r clean}
+# define a function to find and parse the table node,
+# select the columns i need, and make it into a tibble
+# thankfully, the table formatting is the same on each page
+read_nys_xml_table <- function(x) {
+  html_nodes(x, "table") %>%
+    html_table(fill = TRUE) %>%
+    as.data.frame() %>%  # i'm not sure why i can't coerce directly to tibble
+    as_tibble() %>%
+    slice(-(c(1:5, 11:12)))
+  }
+
+# parse and clean population
+population <- read_nys_xml_table(pop) %>%
+  transmute(
+    county = County,
+    pop_wra = as.integer(str_replace(Var.2, ",", ""))
+    ) %>%
+  # combine essex/hamilton counties
+  add_row(
+    county = "Essex/Hamilton",
+    pop_wra = sum(.$pop_wra[.$county %in% c("Essex", "Hamilton")])
+    ) %>%
+  filter(!county %in% c("Essex", "Hamilton"))
+
+# parse and clean live births
+live_births <- read_nys_xml_table(birth) %>%
+  transmute(
+    county = County,
+    live_births = as.integer(str_replace(Var.2, ",", ""))
+    ) %>%
+  # combine essex/hamilton counties
+  add_row(
+    county = "Essex/Hamilton",
+    live_births = sum(.$live_births[.$county %in% c("Essex", "Hamilton")])
+    ) %>%
+  filter(!county %in% c("Essex", "Hamilton"))
+
+# parse and clean abortions
+abortions <- read_nys_xml_table(abort) %>%
+  transmute(
+    county = County,
+    abortions = as.integer(str_replace(Var.2, ",", ""))
+    ) %>%
+  # essex/hamilton is already aggregated here, but repeated as hamilton/essex
+  filter(county != "Hamilton/Essex")
+
+# let's print one of those tibbles to make sure it looks right
+live_births
+```
+
+Now that we've got all the Department of Health data cleaned up, we need to combine these
+
+
+```{r bind}
+# preg_rate <- reduce(list(population, live_births, abortion), left_join) %>%
+#   mutate(
+#     fertility_rate = (live_births / pop_wra) * 1000,
+#     abortion_rate = (abortion_tot / pop_wra) * 1000,
+#     fetal_loss_rate = 17.9, # via table 1 https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf
+#     preg_tot = as.integer(
+#     (pop_wra / 1000) * 
+#       ((fertility_rate * 0.75) + (abortion_rate * 0.167) + (fetal_loss_rate * 0.25)))
+#     ) %>%
+#   mutate(county = recode(county, "St Lawrence" = "St. Lawrence"))
+```
+
+

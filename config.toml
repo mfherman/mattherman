@@ -11,6 +11,8 @@ title = "Matt Herman"
 disqusshortname = "mattherman"
 pluralizelisttitles = false
 googleAnalytics = "UA-112317483-1"
+math = true
+uselatex = true
 ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [permalinks]

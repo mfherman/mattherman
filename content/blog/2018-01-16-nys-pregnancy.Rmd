@@ -14,7 +14,7 @@ tags:
 library(knitr)
 knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, 
                       echo = TRUE, dpi = 180, cache.lazy = FALSE)
-options(width = 80, dplyr.width = 150)
+options(width = 78, dplyr.width = 150)
 library(tidyverse)
 library(rvest)
 library(sf)
@@ -34,7 +34,6 @@ To calculate the number of pregnant women in a given area, you need to specify f
 
 With these parameters, there is a very simple calculation to arrive at the total number of women who are pregnant. Given the following variables:
 
-
 $$
 \begin{aligned}
 wra ={} & \text{women of reproductive age}\\
@@ -49,7 +48,7 @@ P ={} & \text{proportion of the year a woman} \\
 \end{aligned}
 $$
 
-The equation to estimate the number of women who live in a given geographical area that are currently pregnant is:
+The expression to estimate the number of women who live in a given geographical area that are currently pregnant is:
 
 $$
 \begin{aligned}
@@ -62,11 +61,9 @@ Following the CDC guidance, I determined the best and most recent sources of dat
 * NYS Department of Health Vital Statistics, 2015, [Table 1a](https://www.health.ny.gov/statistics/vital_statistics/2015/table01a.htm)
 * NYS Department of Health Vital Statistics, 2015, [Table 7](https://www.health.ny.gov/statistics/vital_statistics/2015/table07.htm)
 * NYS Department of Health Vital Statistics, 2015, [Table 21](https://www.health.ny.gov/statistics/vital_statistics/2015/table21.htm)
-* CDC National Vital Statistics Reports, 2012, [Table 1](https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf)[^abortrate]
+* CDC National Vital Statistics Reports, _Estimated Pregnancy Rates and Rates of Pregnancy Outcomes for the United States_, 2012, [Table 1](https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf)
 
-[^abortrate]: The CDC recommend that that national fetal loss rate be used as it does not vary systematically by geography and the CDC national estimate is likely more accurate than state Deaprtments of Health.
-
-The NYS Department of Health report this data at the county level, so I will calculate results for each of New York's 62 counties.[^essexham] I will also use socidemogaphic data from the American Community Survey to contextulize the results.
+The NYS Department of Health report this data at the county level, so I will calculate results for each of New York's 62 counties.[^essexham] I will also use demographic data from the American Community Survey to contextulize the results.
 
 [^essexham]: Due to the small number of abortions in Essex and Hamilton Counties, the NYS Department of Health reports combined numbers for these counties to protect privacy. Therefore, I aggregate all rates and calculations for these two counties.
 
@@ -138,20 +135,121 @@ abortions <- read_nys_xml_table(abort) %>%
 live_births
 ```
 
-Now that we've got all the Department of Health data cleaned up, we need to combine these
+Now that I've got all the Department of Health data cleaned up, I'll join the raw numbers for population, births and abortions into one tibble and calculate rates per 1,000 women of reproductive age for births and abortions. I'm also adding the national fetal loss rate of 17.9 per 1,000 women of reproductive age to each county.[^abortrate] After I join all the paramters, I can calculate the pregnancy rate using the expression specified above.
 
+[^abortrate]: The CDC recommend that that national fetal loss rate be used as the rate does not vary systematically by geography and the CDC national estimate is likely more accurate than state Deaprtments of Health esitmates.
 
-```{r bind}
-# preg_rate <- reduce(list(population, live_births, abortion), left_join) %>%
-#   mutate(
-#     fertility_rate = (live_births / pop_wra) * 1000,
-#     abortion_rate = (abortion_tot / pop_wra) * 1000,
-#     fetal_loss_rate = 17.9, # via table 1 https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf
-#     preg_tot = as.integer(
-#     (pop_wra / 1000) * 
-#       ((fertility_rate * 0.75) + (abortion_rate * 0.167) + (fetal_loss_rate * 0.25)))
-#     ) %>%
-#   mutate(county = recode(county, "St Lawrence" = "St. Lawrence"))
+```{r join_health}
+# join scarped data, calculate rates and total pregnant women
+preg_rate <- reduce(list(population, live_births, abortions), left_join) %>%
+  mutate(
+    fertility_rate = (live_births / pop_wra) * 1000,
+    abortion_rate = (abortions / pop_wra) * 1000,
+    fetal_loss_rate = 17.9, # national rate per cdc
+    preg_tot = as.integer((pop_wra / 1000) *
+                            (
+                              (fertility_rate * 0.75)
+                              + (abortion_rate * 0.167)
+                              + (fetal_loss_rate * 0.25)
+                              )
+                          )
+    ) %>%
+  # rename to join with census data later
+  mutate(county = recode(county, "St Lawrence" = "St. Lawrence"))
+preg_rate
+```
+
+Next up we'll download county-level demographic data from the American Community Survey (ACS) using the wonderful [`tidycensus`](https://walkerke.github.io/tidycensus/) package. This package gives you easy access to Census API and as a bonus has the option to download TIGER/Line shapefiles and convert them to [`sf`](https://github.com/r-spatial/sf) objects containing population estimates. With the addition of the county geometry data, I can do some mapping to see if pregnancy rate appears to be related to 
+
+If you haven't used `tidycensus` before, the first step after installing the package is to set a Census API key. A key can be requesed here: https://api.census.gov/data/key_signup.html. To install the key in your `.Renviron` file simply run the following:
+
+```{r install_key, eval = FALSE}
+library(tidycensus)
+census_api_key("YOUR API KEY GOES HERE")
+```
+
+For now, I'm just going to download the total population and total female population of each county. (In a later blog post, I'll do some additional analysis using more sociodemographic variables to model the pregnancy rates.)
+
+```{r download_acs, results = "hide"}
+# cache downloaded shapefiles so don't have to re-download each time
+options(tigris_use_cache = TRUE)
+
+# download acs 5 year estimates
+acs_pop <- get_acs(
+  state = "NY",
+  geography = "county",
+  variables = "B01001_026",  # female pop
+  survey = "acs5",
+  summary_var = "B01001_001",  # total pop
+  year = 2016,
+  geometry = TRUE
+)
+
+# clean up county names for joining and rename vars
+fem_pop <- acs_pop %>%
+  mutate(county = str_replace(NAME, "\\ County.*", "")) %>%
+  select(county, pop_tot = summary_est, pop_fem = estimate)
+
+# calculate combined populations for essex and hamilton counties
+esx_ham <- fem_pop %>%
+  filter(county %in% c("Essex", "Hamilton")) %>%
+  summarise(
+    county = "Essex/Hamilton",
+    pop_tot = sum(pop_tot),
+    pop_fem = sum(pop_fem)
+  )
+```
+
+Now I'll join the Census variables and geographies with the rates I caclulated from the NYS Department of Health to create one final data frame with everything I need to summarize and map the results.
+
+```{r join_acs_health}
+# add essex/hamilton row and join with dept of health rates
+# calc pregnant women as a proportion of female pop, total pop, and wra pop
+preg_sf <- rbind(fem_pop, esx_ham) %>%
+  filter(!county %in% c("Essex", "Hamilton")) %>%
+  left_join(preg_rate) %>% 
+  mutate(
+    preg_fem_prop = preg_tot / pop_fem,
+    preg_wra_prop = preg_tot / pop_wra,
+    preg_tot_prop = preg_tot / pop_tot
+  )
+```
+
+If you've never worked with an `sf` object before, it is essentially just a tibble with an additional column specifying the coordinates of the geometry associated with each row. So in this case, each row is a county and the `geometry` column is a list-column of XY coordinates that specify the shape of each county polygon.
+
+An `sf` object prints like a tibble, but it includes some additional information relating to the geometry at the top.
+
+```{r print_sf}
+# select first 4 cols for better printing
+preg_sf %>% select(1:4)
+```
+
+I've got the data cleaned up and I've calculated all the rates and proportions we need, so now I can do some exploring and mapping. First, I'll look at raw numbers of pregnant women, since that was my initial question.
+
+```{r}
+preg_sf %>% summarize(total_preg = sum(preg_tot))
 ```
 
 
+```{r plot}
+ggplot(preg_sf, aes(x = reorder(county, preg_wra_prop), y = preg_wra_prop)) +
+  geom_col(color = "navy", width = 0.1) +
+  geom_point(color = "navy", size = 1.5) +
+  labs(
+    title = "Percentage of women of reproductive age (15 – 44) who are pregnant",
+    subtitle = "by County in New York State",
+    y = "Percent Pregnant",
+    x = "",
+    caption = paste("Source: NYS Department of Health Vital Statistics,",
+                    "2015, Tables 1a, 7, and 21\nCDC National Vital", 
+                    "Statistics, Pregnancy Outcomes for the United States,",
+                    "2008, Table 1"
+                     )
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(size = 7, angle = 60, vjust = 0.5),
+    plot.caption = element_text(size = 6, face = "italic")
+    ) +
+  scale_y_continuous(labels = scales::percent)
+```

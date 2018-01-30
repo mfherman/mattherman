@@ -711,6 +711,13 @@ kbd {
   white-space: nowrap;
 }
 
+pre code {
+  overflow: auto;
+  word-wrap: normal;
+  white-space: pre;
+}
+
+
 /* Fonts */
 
 {{ if not .Site.Params.disablefancyfonts  }}

@@ -1,9 +1,9 @@
 ---
 title: How many women in New York are pregnant right now?
 author:
-date: "2018-01-29"
+date: "2018-01-31"
 slug: nys-pregnancy
-draft: true
+draft: false
 tags:
   - rstats
   - mapping
@@ -31,7 +31,7 @@ library(tmap)
 
 When I found out that J was pregnant, my first thought was OMG, I'm so excited to be a dad! My second thought was, I wonder *how many other women in New York are also pregnant right now?* Knowing that there was plenty of health and demographic public data available, I was pretty sure I could answer this question.
 
-After a little googling, I found [this brief](https://www.cdc.gov/reproductivehealth/emergency/pdfs/PregnacyEstimatoBrochure508.pdf) from the Centers for Disease Control and Prevention (CDC) which details how to estimate the number of pregnant women in a geographic area. Bingo!
+After a little googling, I found [this brief](/pdf/cdc-preg.pdf) from the Centers for Disease Control and Prevention (CDC) which details how to estimate the number of pregnant women in a geographic area. Bingo!
 
 To calculate the number of pregnant women in a given area, you need to specify four parameters:
 
@@ -71,7 +71,7 @@ Following the CDC guidance, I determined the best and most recent sources of dat
 * NYS Department of Health Vital Statistics, 2015, [Table 21](https://www.health.ny.gov/statistics/vital_statistics/2015/table21.htm)
 * CDC National Vital Statistics Reports, _Estimated Pregnancy Rates and Rates of Pregnancy Outcomes for the United States_, 2012, [Table 1](https://www.cdc.gov/nchs/data/nvsr/nvsr60/nvsr60_07.pdf)
 
-The NYS Department of Health report this data at the county level, so I will calculate results for each of New York's 62 counties.[^essexham] I will also use demographic data from the American Community Survey to contextualize the results.
+The NYS Department of Health reports this data at the county level, so I will calculate results for each of New York's 62 counties.[^essexham] I will also use demographic data from the American Community Survey to contextualize the results.
 
 [^essexham]: Due to the small number of abortions in Essex and Hamilton Counties, the NYS Department of Health reports combined numbers for these counties to protect privacy. Therefore, I aggregate all rates and calculations for these two counties.
 
@@ -80,6 +80,7 @@ Let's get to it!
 The first step is to scrape and clean the vital statistics data from the [NYS Department of Health website](https://www.health.ny.gov/statistics/vital_statistics/2015/).
 
 ```{r scrape}
+# load all the packages i'll need
 library(tidyverse)
 library(rvest)
 library(sf)
@@ -229,7 +230,7 @@ If you've never worked with an `sf` object before, it is essentially a tibble wi
 An `sf` object prints like a tibble, but it includes some additional information relating to the geometry at the top.
 
 ```{r print_sf}
-# select first 4 cols for better printing
+# select first 4 cols for pretty printing here
 preg_sf %>% select(1:4)
 ```
 
@@ -255,15 +256,15 @@ preg %>% summarize(
   total_pop = sum(pop_tot)
 )
 ```
-***The estimated number of pregnant women in the state of New York is `r preg %>% summarize(total_preg = sum(preg_tot)) %>% pull()` or `r make_pct(preg %>% summarize(preg_prop = sum(preg_tot) / sum(pop_wra)) %>% pull())` of all women of reproductive age (15 - 44).***
+***There are aproximately `r preg %>% summarize(total_preg = sum(preg_tot)) %>% pull()` pregnant women in New York State right now.*** This is `r make_pct(preg %>% summarize(preg_prop = sum(preg_tot) / sum(pop_wra)) %>% pull())` of all women of reproductive age (15 - 44) living in New York.
 
-But since I have this data at the county level, I can take a look at differences between counties. I know that more populous places will have more pregnant women, but is the proportion of pregnant women to all women consistent across the state?
+But since I have this data at the county level, I can take a look at differences between counties. I know that more populous places will have more pregnant women, but is the proportion of pregnant women consistent across the state?
 
 To explore that question, I can make a chart showing the percentage of women of reproductive age who are pregnant in each county.
 
 ```{r preg_pct_plot}
 ggplot(preg, aes(x = reorder(county, preg_wra_prop), y = preg_wra_prop)) +
-  geom_col(color = "royalblue", width = 0.1) +
+  geom_col(color = "royalblue", width = 0.08) +
   geom_point(color = "royalblue", size = 1.5) +
   labs(
     title = paste0(
@@ -284,7 +285,8 @@ ggplot(preg, aes(x = reorder(county, preg_wra_prop), y = preg_wra_prop)) +
   theme(
     axis.text.x = element_text(size = 7, angle = 60, vjust = 0.5),
     axis.title.y = element_blank(),
-    plot.caption = element_text(size = 7, face = "italic")
+    plot.caption = element_text(size = 7, face = "italic"),
+    panel.grid.major.x = element_blank()
   ) +
   scale_y_continuous(labels = scales::percent)
 ```
@@ -336,7 +338,7 @@ tm_shape(preg_sf) +
   )
 ```
 
-This map does a decent job of representing where pregnant women live in New York, but it more less looks like a map of total population density in New York State. To show the variation observed in pregnancy rates, I need to make a map with these relative percentages, rather than total numbers of pregnant women. To do this, I turn to a choropleth map where the colors of the counties represent the percentage of women of reproductive age who are pregnant. And to spice it up, I'll make this map interactive and add a basemap and popups with detailed data for each county.
+This map does a decent job of representing where pregnant women live in New York, but it more or less looks like a map of total population density in New York State. To show the variation observed in pregnancy rates, I need to make a map with these relative percentages, rather than total numbers of pregnant women. To do this, I turn to a choropleth map where the colors of the counties represent the percentage of women of reproductive age who are pregnant. And to spice it up, I'll make this map interactive and add a basemap and popups with detailed data for each county.
 
 ```{r choro_map, out.width = "100%", out.height = "400px"}
 # change tmap to interactive mode

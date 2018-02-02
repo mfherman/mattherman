@@ -170,7 +170,7 @@ preg_rate <- reduce(list(population, live_births, abortions), left_join) %>%
 preg_rate
 ```
 
-Next up we'll download county-level demographic data from the American Community Survey (ACS) using the wonderful [`tidycensus`](https://walkerke.github.io/tidycensus/) package. This package gives you easy access to Census API and as a bonus has the option to download TIGER/Line or cartographic boundary shapefiles and convert them to [`sf`](https://github.com/r-spatial/sf) objects containing population estimates. With the addition of the county geometry data, I can do some mapping to see if pregnancy rate appears to be related to 
+Next up we'll download county-level demographic data from the American Community Survey (ACS) using the wonderful [`tidycensus`](https://walkerke.github.io/tidycensus/) package. This package gives you easy access to Census API and as a bonus has the option to download TIGER/Line or cartographic boundary shapefiles and convert them to [`sf`](https://github.com/r-spatial/sf) objects containing population estimates. With the addition of the county geometry data, I can do some mapping to see if pregnancy rate appears to be related to geography.
 
 If you haven't used `tidycensus` before, the first step after installing the package is to set a Census API key. A key can be requested here: https://api.census.gov/data/key_signup.html. To install the key in your `.Renviron` file simply run the following:
 

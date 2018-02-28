@@ -1,0 +1,251 @@
+---
+title: How Staten Island voted in 2016 (and what it might mean for 2018)
+author:
+date: "2018-02-28"
+slug: cd11-vote
+draft: true
+tags:
+  - rstats
+  - mapping
+  - elections
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  cache = TRUE, warning = FALSE, message = FALSE,
+  echo = TRUE, dpi = 180, cache.lazy = FALSE,
+  fig.retina = 2
+)
+
+knitr::knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark = ",")
+})
+options(width = 78, dplyr.width = 78)
+library(tidyverse)
+library(janitor)
+library(sf)
+library(tmap)
+library(leaflet)
+library(leaflet.extras)
+```
+
+In the last month, I've been volunteering with a new political advocacy organization, [Changing the Conversation Together](https://www.ctctogether.org/). The premise of CTC is that through long, in-person conversions, voters can be persuaded to change their minds about issues or elections. The method is called "Deep Canvassing" and was used most prominently to [reduce predjudice against transgender people in California](https://www.nytimes.com/2016/04/10/magazine/how-do-you-change-voters-minds-have-a-conversation.html).
+
+My contribution to CTC so far has been to gather and clean prior election results, combine them with census data, and make some maps. All of which are great tasks to work on using R!
+
+During the 2018 election cycle, CTC is working in New York's 11th Congressional District to flip its House seat from Republican to Democrat. NY 11 covers all of Staten Island and a small portion of south Brooklyn. It's the only congressional district in New York City that is represented by a Republican (Dan Donovan). In 2016, the district voted for Trump over Clinton by a margin of 10 percentage points (54.4% to 44.4%). 
+
+In this post, I'll download and map 2016 presidential election results at the smallest geographic unit available, the election district (ED). One use of a map like this is to help CTC decide which EDs to focus on with their deep canvassing work.
+
+---
+
+The NYC Board of Elections has certified results of all the 2016 elected offices available for download in CSV format on [their website](http://vote.nyc.ny.us/html/results/2016.shtml).
+
+First I'll pull the appropriate CSV into R and get it all tidied up:
+
+```{r get vote restuls}
+# load packages all the packages i'll need
+library(tidyverse)
+library(janitor)
+library(sf)
+library(tmap)
+library(leaflet)
+library(leaflet.extras)
+
+# 2016 presidential results for all of nyc
+pres_2016 <- "http://vote.nyc.ny.us/downloads/csv/election_results/2016/20161108General%20Election/00000100000Citywide%20President%20Vice%20President%20Citywide%20EDLevel.csv"
+
+# read in 2016 pres results
+pres_2016_results <- read_csv(
+  file = pres_2016,
+  col_types = cols(.default = "c")
+  ) %>%
+  clean_names() %>%
+  mutate(
+    elect_dist = paste0(ad, ed), # combine elect and assemb dist into unique id
+    tally = as.integer(tally), # convert vote tally to integer
+    candidate = case_when(
+      str_detect(unit_name, "Clinton") ~ "Clinton",
+      str_detect(unit_name, "Stein") ~ "Stein",
+      str_detect(unit_name, "Johnson") ~ "Johnson",
+      str_detect(unit_name, "Trump") ~ "Trump"
+    )
+  ) %>%
+  filter(!is.na(candidate)) %>%
+  select(elect_dist, candidate, tally)
+
+# tally and tidy 2016 pres results
+pres_2016_tidy <- pres_2016_results %>%
+  group_by(elect_dist) %>%
+  # candidates may have vote tallies on multiple lines so we need to combine
+  summarise(
+    year = 2016L,
+    type = "general",
+    office = "pres",
+    clinton = sum(tally[candidate == "Clinton"]),
+    trump = sum(tally[candidate == "Trump"]),
+    stein = sum(tally[candidate == "Stein"]),
+    johnson = sum(tally[candidate == "Johnson"])
+  ) %>%
+  gather(candidate, tally, -(elect_dist:office)) %>%
+  arrange(elect_dist)
+
+pres_2016_tidy
+```
+
+I've got every election district in New York City here but I want to limit my mapping to only EDs contained in the 11th Congressional District. The easiest way I've found to determine these EDs is by downloading the election results for the 2016 congressional election in NY 11. Then I can filter the presidential results to only those EDs.
+
+```{r get ny11 eds}
+# 2016 ny11 results
+ny11_2016 <- "http://vote.nyc.ny.us/downloads/csv/election_results/2016/20161108General%20Election/00002000011Crossover%20Representative%20in%20Congress%2011th%20Congressional%20District%20EDLevel.csv"
+
+# read in ny11 results and create unique vector of EDs in ny11
+ny11_eds <- read_csv(
+  file = ny11_2016,
+  col_types = cols(.default = "c")
+  ) %>%
+  clean_names() %>%
+  mutate(elect_dist = paste0(ad, ed)) %>%
+  distinct(elect_dist) %>%
+  pull()
+
+# filter 2016 pres results to only ny116
+ny11_pres_2016_tidy <- pres_2016_tidy %>%
+  filter(elect_dist %in% ny11_eds)
+ny11_pres_2016_tidy
+```
+
+Now I've got my tidy target election districts and the vote tallies for each candidate. Before I put these results on a map, I'll calculate vote percentages and margins that I want to include in my map. I also want to identify particular EDs where the margin between Trump and Clinton was pretty close. These more competitive EDs might be good to target for voter persuasion in the lead up to the 2018 elections. To do that I need to reshape my data a bit and then join the vote tallies with a shapefile of ED boundaries.[^dl-shp]
+
+[^dl-shp]: For ease of this demo, I've posted a geojson of election district polygons in NY 11 on [my GitHub](https://github.com/mfherman/mattherman/blob/master/static/shp/ny11_ed.geojson). I accessed the original shapefile from the NYC Department of City Planning's [BYTES of the BIG APPLE Archive](https://www1.nyc.gov/site/planning/data-maps/open-data/bytes-archive.page).
+
+```{r add-margin-join-sf}
+# define function to convert to wide and calc vote proportion for each ed
+widen_add_tot_prop <- function(x) {
+  cand_totals <- x %>%
+    count(elect_dist, candidate, wt = tally) %>%
+    mutate(candidate = paste0(candidate, "_tot")) %>%
+    spread(candidate, n)
+  
+  dist_totals <- x %>%
+    count(elect_dist, wt = tally) %>%
+    rename(total_votes = n) %>%
+    left_join(cand_totals, by = "elect_dist")
+  
+  x %>%
+    add_count(elect_dist, wt = tally) %>%
+    mutate(prop = tally / n) %>%
+    select(-tally, -n) %>%
+    mutate(candidate = paste0(candidate, "_prop")) %>%
+    spread(key = candidate, value = prop) %>%
+    left_join(dist_totals, by = "elect_dist") %>%
+    select(elect_dist, year, type, office, total_votes, everything())
+}
+
+# convert to wide, calculate dem/rep vote margin, select vars
+ny11_margin <- ny11_pres_2016_tidy %>%
+  widen_add_tot_prop() %>%
+  mutate(d_r_margin = clinton_prop - trump_prop) %>%
+  select(elect_dist, total_votes, d_r_margin,
+         clinton_prop, trump_prop, johnson_prop, stein_prop,
+         clinton_tot, trump_tot, johnson_tot, stein_tot)
+
+# read in geojson of ny11 ed polygons
+ny11_link <- "https://github.com/mfherman/mattherman/raw/master/static/shp/nyed_16c.geojson"
+ny11_sf <- read_sf(ny11_link)
+
+# join vote tallies with sf geo obhect
+ny11_pres_to_map <- inner_join(ny11_sf, ny11_margin) %>%
+  mutate(elect_dist = paste("ED", elect_dist))
+
+# pull out eds that leaned repub
+ny11_pres_close_rep <- ny11_pres_to_map %>%
+  filter(d_r_margin >= -0.1 & d_r_margin < 0)
+
+# pull out eds that leaned dem
+ny11_pres_close_dem <- ny11_pres_to_map %>%
+  filter(d_r_margin >= 0 & d_r_margin <= 0.1)
+
+```
+
+There a few packages you can use to create interactive Leaflet maps directly from R. Recently, I've been using [`tmap`](https://github.com/mtennekes/tmap#tmap-thematic-maps-in-r), but [`leaflet`](https://rstudio.github.io/leaflet/) from RStudio and [`mapview`](https://r-spatial.github.io/mapview/) are also good options.[^leaflet]
+
+First, I'll define a couple of helper function to format percentages and margins on my map. Next I'll use `tmap` to define the features, fill colors, basemap, and popups of my choropleth map of 2016 presidential election results.
+
+Then I'll add green and orange borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and <span style="background-color:lightgreen">leaned Republican</span>.[^legend] Finally, I'll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.
+
+[^leaflet]: In fact, in the map I'm going to make, I will convert my `tmap` object to a `leaflet` object and then add some extra leaflet features via the [`leaflet.extras`](https://bhaskarvk.github.io/leaflet.extras/) package.
+
+[^legend]: One downside to using `tmap` to create leaflet maps is that you lose some ability to customize layers and legends. I wanted to add a legend that described the green and orange borders as well as customize the scale in the margin legend, but wasn't able to.
+
+```{r make-map, cahce = FALSE, out.width = "100%", out.height = "500px", fig.show = "asis"}
+
+# define a little helper function to format percentages for my map
+make_pct <- function(x, digits = 1) {
+  paste0(formatC(x * 100, digits = digits, format = "f"), "%")
+}
+
+# define a little helper function to format margins for my map
+make_margin <- function(x, digits = 1) {
+  if_else(x > 0,
+          paste0("+",formatC(x * 100, digits = digits, format = "f")),
+          formatC(x * 100, digits = digits, format = "f")
+          )
+}
+
+# define tmap object, fill, popup vars, basemap
+my_map <- tm_shape(ny11_pres_to_map, name = "2016 Presidential") +
+  tm_fill(
+    col = "d_r_margin", # select d/r margin column to define fill colors
+    palette = "RdBu", # select red/blue diverging palette
+    style = "cont", # continous fill rather than bins
+    breaks = seq(-1, 1, by = 0.2),
+    title = "D/R Margin",
+    textNA = "No Votes",
+    id = "elect_dist", # define popup label id
+    popup.vars = c(
+      "Dem/Rep Margin" = "d_r_margin", # name vars for popups
+      "Total Votes" = "total_votes",
+      "Clinton %" = "clinton_prop",
+      "Trump %" = "trump_prop",
+      "Johnson %" = "johnson_prop",
+      "Stein %" = "stein_prop"
+    ),
+    popup.format = list(
+      d_r_margin = list(fun = make_margin), # nice formatting for popup numbers
+      total_votes = list(format = "f", digits = 0),
+      clinton_prop = list(fun = make_pct),
+      trump_prop = list(fun = make_pct),
+      johnson_prop = list(fun = make_pct),
+      stein_prop = list(fun = make_pct)
+      )
+  ) +
+  tm_borders(col = "darkgray") +
+  tm_shape(ny11_pres_close_dem, name = "Lean Dem") +
+  tm_borders(col = "orange", lwd = 2) + # add lean dem borders
+  tm_shape(ny11_pres_close_rep, name = "Lean Rep") + 
+  tm_borders(col = "green", lwd = 2) + # add lean rep borders
+  tm_view(
+    alpha = 0.85, # a little less transparent than tmap default
+    basemaps = "Stamen.TonerLite", # pick a pretty basemap
+    legend.position = c("right", "bottom")
+    )
+
+my_pretty_map <- tmap_leaflet(my_map) %>% # convert tmap obj to leaflet obj
+  addSearchFeatures( # add search box
+    targetGroups = "2016 Presidential",
+    options = searchFeaturesOptions(
+      zoom = 14,
+      openPopup = TRUE,
+      collapsed = FALSE,
+      position = "topright",
+      textPlaceholder = "Search EDs..."
+      )
+    ) %>%
+  addFullscreenControl(pseudoFullscreen = TRUE)
+
+my_pretty_map
+```
+<br>
+Hey, that's a pretty good map! In a future post I'll add more contextual data to the map like sociodemographics, turnout rates, and prior year election results. This additional information will help CTC identify the best EDs to target.

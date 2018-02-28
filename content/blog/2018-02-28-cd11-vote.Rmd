@@ -152,7 +152,7 @@ ny11_margin <- ny11_pres_2016_tidy %>%
          clinton_tot, trump_tot, johnson_tot, stein_tot)
 
 # read in geojson of ny11 ed polygons
-ny11_link <- "https://github.com/mfherman/mattherman/raw/master/static/shp/nyed_16c.geojson"
+ny11_link <- "https://raw.githubusercontent.com/mfherman/mattherman/master/static/shp/ny11_ed.geojson"
 ny11_sf <- read_sf(ny11_link)
 
 # join vote tallies with sf geo obhect

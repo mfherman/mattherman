@@ -30,7 +30,7 @@ library(leaflet)
 library(leaflet.extras)
 ```
 
-In the last month, I've been volunteering with a new political advocacy organization, [Changing the Conversation Together](https://www.ctctogether.org/). The premise of CTC is that through long, in-person conversions, voters can be persuaded to change their minds about issues or elections. The method is called "Deep Canvassing" and was used most prominently to [reduce predjudice against transgender people in California](https://www.nytimes.com/2016/04/10/magazine/how-do-you-change-voters-minds-have-a-conversation.html).
+In the last month, I've been volunteering with a new political advocacy organization, [Changing the Conversation Together](https://www.ctctogether.org/). The premise of CTC is that through long, in-person conversations, voters can be persuaded to change their minds about issues or elections. The method is called "Deep Canvassing" and was used most prominently to [reduce predjudice against transgender people in California](https://www.nytimes.com/2016/04/10/magazine/how-do-you-change-voters-minds-have-a-conversation.html).
 
 My contribution to CTC so far has been to gather and clean prior election results, combine them with census data, and make some maps. All of which are great tasks to work on using R!
 

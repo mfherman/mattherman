@@ -116,7 +116,7 @@ ny11_pres_2016_tidy <- pres_2016_tidy %>%
 ny11_pres_2016_tidy
 ```
 
-Now I've got my tidy target election districts and the vote tallies for each candidate. Before I put these results on a map, I'll calculate vote percentages and margins that I want to include in my map. I also want to identify particular EDs where the margin between Trump and Clinton was pretty close. These more competitive EDs might be good to target for voter persuasion in the lead up to the 2018 elections. To do that I need to reshape my data a bit and then join the vote tallies with a shapefile of ED boundaries.[^dl-shp]
+Now I've got my tidy target election districts and the vote tallies for each candidate. Before I put these results on a map, I'll calculate vote percentages and margins that I want to include in my map. I also want to identify particular EDs where the margin between Trump and Clinton was pretty close. These more competitive EDs might be good to target for voter persuasion in the lead up to the 2018 election. To do that I need to reshape my data a bit and then join the vote tallies with a shapefile of ED boundaries.[^dl-shp]
 
 [^dl-shp]: For ease of this demo, I've posted a geojson of election district polygons in NY 11 on [my GitHub](https://github.com/mfherman/mattherman/blob/master/static/shp/ny11_ed.geojson). I accessed the original shapefile from the NYC Department of City Planning's [BYTES of the BIG APPLE Archive](https://www1.nyc.gov/site/planning/data-maps/open-data/bytes-archive.page).
 
@@ -169,15 +169,15 @@ ny11_pres_close_dem <- ny11_pres_to_map %>%
 
 ```
 
-There a few packages you can use to create interactive Leaflet maps directly from R. Recently, I've been using [`tmap`](https://github.com/mtennekes/tmap#tmap-thematic-maps-in-r), but [`leaflet`](https://rstudio.github.io/leaflet/) from RStudio and [`mapview`](https://r-spatial.github.io/mapview/) are also good options.[^leaflet]
+There are a few packages you can use to create interactive Leaflet maps directly from R. Recently, I've been using [`tmap`](https://github.com/mtennekes/tmap#tmap-thematic-maps-in-r), but [`leaflet`](https://rstudio.github.io/leaflet/) from RStudio and [`mapview`](https://r-spatial.github.io/mapview/) are also good options.[^leaflet]
 
 First, I'll define a couple of helper function to format percentages and margins on my map. Next I'll use `tmap` to define the features, fill colors, basemap, and popups of my choropleth map of 2016 presidential election results.
 
-Then I'll add green and orange borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and <span style="background-color:lightgreen">leaned Republican</span>.[^legend] Finally, I'll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.
+Then I'll add green borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and orange borders ot those that <span style="background-color:lightgreen">leaned Republican</span>.[^legend] Finally, I'll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.
 
 [^leaflet]: In fact, in the map I'm going to make, I will convert my `tmap` object to a `leaflet` object and then add some extra leaflet features via the [`leaflet.extras`](https://bhaskarvk.github.io/leaflet.extras/) package.
 
-[^legend]: One downside to using `tmap` to create leaflet maps is that you lose some ability to customize layers and legends. I wanted to add a legend that described the green and orange borders as well as customize the scale in the margin legend, but wasn't able to.
+[^legend]: One downside to using `tmap` to create Leaflet maps is that you lose some ability to customize layers and legends. I wanted to add a legend that described the green and orange borders as well as customize the scale in the margin legend, but wasn't able to.
 
 ```{r make-map, cahce = FALSE, out.width = "100%", out.height = "500px", fig.show = "asis"}
 

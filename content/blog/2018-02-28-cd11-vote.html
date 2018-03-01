@@ -130,7 +130,7 @@ ny11_pres_2016_tidy</code></pre>
 ##  9 45008       2016 general pres   clinton     123
 ## 10 45008       2016 general pres   trump       263
 ## # ... with 1,706 more rows</code></pre>
-<p>Now I’ve got my tidy target election districts and the vote tallies for each candidate. Before I put these results on a map, I’ll calculate vote percentages and margins that I want to include in my map. I also want to identify particular EDs where the margin between Trump and Clinton was pretty close. These more competitive EDs might be good to target for voter persuasion in the lead up to the 2018 elections. To do that I need to reshape my data a bit and then join the vote tallies with a shapefile of ED boundaries.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
+<p>Now I’ve got my tidy target election districts and the vote tallies for each candidate. Before I put these results on a map, I’ll calculate vote percentages and margins that I want to include in my map. I also want to identify particular EDs where the margin between Trump and Clinton was pretty close. These more competitive EDs might be good to target for voter persuasion in the lead up to the 2018 election. To do that I need to reshape my data a bit and then join the vote tallies with a shapefile of ED boundaries.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
 <pre class="r"><code># define function to convert to wide and calc vote proportion for each ed
 widen_add_tot_prop &lt;- function(x) {
   cand_totals &lt;- x %&gt;%
@@ -176,9 +176,9 @@ ny11_pres_close_rep &lt;- ny11_pres_to_map %&gt;%
 # pull out eds that leaned dem
 ny11_pres_close_dem &lt;- ny11_pres_to_map %&gt;%
   filter(d_r_margin &gt;= 0 &amp; d_r_margin &lt;= 0.1)</code></pre>
-<p>There a few packages you can use to create interactive Leaflet maps directly from R. Recently, I’ve been using <a href="https://github.com/mtennekes/tmap#tmap-thematic-maps-in-r"><code>tmap</code></a>, but <a href="https://rstudio.github.io/leaflet/"><code>leaflet</code></a> from RStudio and <a href="https://r-spatial.github.io/mapview/"><code>mapview</code></a> are also good options.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></p>
+<p>There are a few packages you can use to create interactive Leaflet maps directly from R. Recently, I’ve been using <a href="https://github.com/mtennekes/tmap#tmap-thematic-maps-in-r"><code>tmap</code></a>, but <a href="https://rstudio.github.io/leaflet/"><code>leaflet</code></a> from RStudio and <a href="https://r-spatial.github.io/mapview/"><code>mapview</code></a> are also good options.<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></p>
 <p>First, I’ll define a couple of helper function to format percentages and margins on my map. Next I’ll use <code>tmap</code> to define the features, fill colors, basemap, and popups of my choropleth map of 2016 presidential election results.</p>
-<p>Then I’ll add green and orange borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and <span style="background-color:lightgreen">leaned Republican</span>.<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a> Finally, I’ll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.</p>
+<p>Then I’ll add green borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and orange borders ot those that <span style="background-color:lightgreen">leaned Republican</span>.<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a> Finally, I’ll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.</p>
 <pre class="r"><code># define a little helper function to format percentages for my map
 make_pct &lt;- function(x, digits = 1) {
   paste0(formatC(x * 100, digits = digits, format = &quot;f&quot;), &quot;%&quot;)
@@ -251,6 +251,6 @@ my_pretty_map</code></pre>
 <ol>
 <li id="fn1"><p>For ease of this demo, I’ve posted a geojson of election district polygons in NY 11 on <a href="https://github.com/mfherman/mattherman/blob/master/static/shp/ny11_ed.geojson">my GitHub</a>. I accessed the original shapefile from the NYC Department of City Planning’s <a href="https://www1.nyc.gov/site/planning/data-maps/open-data/bytes-archive.page">BYTES of the BIG APPLE Archive</a>.<a href="#fnref1">↩</a></p></li>
 <li id="fn2"><p>In fact, in the map I’m going to make, I will convert my <code>tmap</code> object to a <code>leaflet</code> object and then add some extra leaflet features via the <a href="https://bhaskarvk.github.io/leaflet.extras/"><code>leaflet.extras</code></a> package.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>One downside to using <code>tmap</code> to create leaflet maps is that you lose some ability to customize layers and legends. I wanted to add a legend that described the green and orange borders as well as customize the scale in the margin legend, but wasn’t able to.<a href="#fnref3">↩</a></p></li>
+<li id="fn3"><p>One downside to using <code>tmap</code> to create Leaflet maps is that you lose some ability to customize layers and legends. I wanted to add a legend that described the green and orange borders as well as customize the scale in the margin legend, but wasn’t able to.<a href="#fnref3">↩</a></p></li>
 </ol>
 </div>

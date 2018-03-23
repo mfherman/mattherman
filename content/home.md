@@ -8,4 +8,4 @@ Currently, I'm working on a project in collaboration with the [Center for Innova
 
 Prior to beginning my graduate program, I spent five years recording oral histories with [StoryCorps](https://storycorps.org/) and helped start a butcher shop and salumeria in Brooklyn, NY called [Ends Meat](https://www.endsmeatnyc.com/). I received my B.A. in American Studies from Columbia University in 2006.
 
-Get in touch at [mfherman@gmail.com](mailto:mfherman@gmail.com).
+Here's [my resume](/pdf/mh-resume.pdf). Get in touch at [mfherman@gmail.com](mailto:mfherman@gmail.com).

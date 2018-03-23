@@ -201,7 +201,8 @@ esx_ham &lt;- fem_pop %&gt;%
     county = &quot;Essex/Hamilton&quot;,
     pop_tot = sum(pop_tot),
     pop_fem = sum(pop_fem)
-  )</code></pre>
+  ) %&gt;%
+  st_cast(&quot;MULTIPOLYGON&quot;)</code></pre>
 <p>Now I’ll join the Census variables and geographies with the rates I calculated from the NYS Department of Health to create one final data frame with everything I need to summarize and map the results.</p>
 <pre class="r"><code># add essex/hamilton row and join with dept of health rates
 # calc pregnant women as a proportion of female pop, total pop, and wra pop
@@ -212,7 +213,8 @@ preg_sf &lt;- rbind(fem_pop, esx_ham) %&gt;%
     preg_fem_prop = preg_tot / pop_fem,
     preg_wra_prop = preg_tot / pop_wra,
     preg_tot_prop = preg_tot / pop_tot
-  )</code></pre>
+  ) %&gt;%
+  st_transform(2261)</code></pre>
 <p>If you’ve never worked with an <code>sf</code> object before, it is essentially a tibble with an additional column specifying the coordinates of the geometry associated with each row. So in this case, each row is a county and the <code>geometry</code> column is a list-column of XY coordinates that specify the shape of each county polygon.</p>
 <p>An <code>sf</code> object prints like a tibble, but it includes some additional information relating to the geometry at the top.</p>
 <pre class="r"><code># select first 4 cols for pretty printing here
@@ -291,37 +293,37 @@ dots &lt;- preg_sf %&gt;%
   st_sample(size = .$preg_tot / 50)
 
 # make a map of dots and county polygons
-tm_shape(preg_sf) +
-  tm_borders(col = &quot;darkgray&quot;) +
-  tm_shape(dots) +
-  tm_dots(col = &quot;royalblue&quot;, size = 0.015) +
-  tm_add_legend(
-    type = &quot;symbol&quot;,
-    labels = &quot; 1 dot = 50 pregnant women&quot;,
-    size = 0.05,
-    shape = 19,
-    col = &quot;royalblue&quot;
-  ) +
-  tm_layout(
-    main.title = &quot;Dot-density map of pregnant women\nin New York State, 2015&quot;,
-    main.title.size = 1.2,
-    frame = FALSE,
-    legend.position = c(0.01, 0.17),
-    legend.text.size = 1
-  ) +
-  tm_credits(
-    text = paste(
-      &quot;Source: NYS Department of Health Vital Statistics,&quot;,
-      &quot;2015, Tables 1a, 7, and 21\nCDC National Vital&quot;,
-      &quot;Statistics, Pregnancy Outcomes for the US,&quot;,
-      &quot;2008, Table 1\nUS Census Bureau, American Community&quot;,
-      &quot;Survey, 2012 - 2016, Table B01001&quot;
-    ),
-    size = 0.5,
-    fontface = &quot;italic&quot;,
-    align = &quot;left&quot;,
-    position = c(0.01, 0.02)
-  )</code></pre>
+  tm_shape(preg_sf) +
+    tm_borders(col = &quot;darkgray&quot;) +
+    tm_shape(dots) +
+    tm_dots(col = &quot;royalblue&quot;, size = 0.015) +
+    tm_add_legend(
+      type = &quot;symbol&quot;,
+      labels = &quot; 1 dot = 50 pregnant women&quot;,
+      size = 0.05,
+      shape = 19,
+      col = &quot;royalblue&quot;
+    ) +
+    tm_layout(
+      main.title = &quot;Dot-density map of pregnant women\nin New York State, 2015&quot;,
+      main.title.size = 1.2,
+      frame = FALSE,
+      legend.position = c(0.01, 0.17),
+      legend.text.size = 1
+    ) +
+    tm_credits(
+      text = paste(
+        &quot;Source: NYS Department of Health Vital Statistics,&quot;,
+        &quot;2015, Tables 1a, 7, and 21\nCDC National Vital&quot;,
+        &quot;Statistics, Pregnancy Outcomes for the US,&quot;,
+        &quot;2008, Table 1\nUS Census Bureau, American Community&quot;,
+        &quot;Survey, 2012 - 2016, Table B01001&quot;
+      ),
+      size = 0.5,
+      fontface = &quot;italic&quot;,
+      align = &quot;left&quot;,
+      position = c(0.01, 0.02)
+    )</code></pre>
 <p><img src="/blog/2018-01-31-nys-pregnancy_files/figure-html/dot_dens-1.png" width="1260" /></p>
 <p>This map does a decent job of representing where pregnant women live in New York, but it more or less looks like a map of total population density in New York State. To show the variation observed in pregnancy rates, I need to make a map with these relative percentages, rather than total numbers of pregnant women. To do this, I turn to a choropleth map where the colors of the counties represent the percentage of women of reproductive age who are pregnant. And to spice it up, I’ll make this map interactive and add a basemap and popups with detailed data for each county.</p>
 <pre class="r"><code># change tmap to interactive mode

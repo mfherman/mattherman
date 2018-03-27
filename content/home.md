@@ -2,7 +2,7 @@
 title = "Home"
 +++
 
-I'm a graduate student in the [Applied Social Research program](http://www.hunter.cuny.edu/sociology/graduate/graduate-program-in-applied-social-research) at Hunter College in New York City. I'm interested in using administrative and public data to better understand the provision and delivery of social services. My coursework in the Sociology and Geography departments has focused on statistical modeling, spatial data analysis, and program evaluation. I like using the [R programmng language](https://en.wikipedia.org/wiki/R_(programming_language)/).
+I'm a graduate student in the [Applied Social Research program](http://www.hunter.cuny.edu/sociology/graduate/graduate-program-in-applied-social-research) at Hunter College in New York City. I'm interested in using administrative and public data to better understand the provision and delivery of social services. My coursework in the Sociology and Geography departments has focused on statistical modeling, spatial data analysis, and program evaluation. I like using the [R programmng language](https://en.wikipedia.org/wiki/R_(programming_language)).
 
 Currently, I'm working on a project in collaboration with the [Center for Innovation through Data Intelligence](http://www1.nyc.gov/site/cidi/about/about.page) and the NYC Department of Homeless Services that uses Natural Language Processing of homelessness prevention case notes to predict an individual's risk of shelter entry.
 

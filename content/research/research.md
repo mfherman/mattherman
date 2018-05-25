@@ -12,3 +12,6 @@ As part of research practicum course at Hunter in Fall 2016, we conceieved and c
 
 The results of the study have been published in the peer-reviewed journal, [Applied Mobilties](/pdf/subway.pdf). The research was also covered by the [Daily News] (http://www.nydailynews.com/new-york/nyc-subways-plagued-disorderly-exits-manspreading-study-article-1.2626553) and [CBS New York](http://newyork.cbslocal.com/2016/05/05/hunter-college-subway-study/).
 
+## Ethical Considerations for Using Algorithmic Decision Tools in the Public Sector
+
+I reviewed recent research and media coverage of algorithmic decision making in the public sector in a [brief paper](/pdf/pub-algo.pdf).

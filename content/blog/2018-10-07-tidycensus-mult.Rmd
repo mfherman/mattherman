@@ -1,0 +1,198 @@
+---
+title: Getting Census data from mulitple states using tidycensus and purrr
+author:
+date: "2018-10-07"
+slug: tidycensus-mult
+draft: false
+tags:
+  - rstats
+  - tidycensus
+  - purrr
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  cache = TRUE, warning = FALSE, message = FALSE, collapse = TRUE,
+  echo = TRUE, dpi = 180, cache.lazy = FALSE,
+  fig.retina = 2
+)
+
+knitr::knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark = ",")
+})
+options(width = 78, dplyr.width = 78)
+options(tigris_use_cache = TRUE)
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(tmap)
+```
+
+If you work with US Census data, you probably already know about the excellent [`tidycensus` package](https://walkerke.github.io/tidycensus/). It provides simple and intuitive access to data from the American Community Survey and Decennial Census through the Census API.
+
+There are some [great vignettes](https://walkerke.github.io/tidycensus/articles/basic-usage.html) that walk through the basic usage of `tidycensus`, but in this post I'll demonstrate how to download Census data (and geometry!) for different geographies in multiple states. The inspiration for this post was [this issue posted on the `tidycensus` GitHub repository](https://github.com/walkerke/tidycensus/issues/121). 
+
+If you want to download tract (or county) data for multiple states, you can call `get_acs()` as you would for a single state, but specify a vector of state abbreviations or FIPS codes to the `state` parameter. `tidycensus` takes care of making multiple calls to the Census API and combines the results for you.
+
+```{r multi-state county}
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(tmap) # we'll use this later to make a map
+
+my_states <- c("NH", "ME", "VT")
+
+my_vars <- c(
+  total_pop = "B01003_001",
+  median_income = "B19013_001"
+  )
+
+multi_state_tract <- get_acs(
+  geography = "tract",
+  variables = my_vars,
+  state = my_states,
+  year = 2016,
+  survey = "acs5",
+  geometry = FALSE
+  )
+
+multi_state_tract
+```
+
+Similarly, if you want to download county subdivision data for all counties in a single state, you can just set the `geography` parameter to `"county subdivision"`.
+
+```{r single state subdiv}
+single_state_subdiv <- get_acs(
+  geography = "county subdivision",
+  variables = my_vars,
+  state = "VT",
+  year = 2016,
+  survey = "acs5",
+  geometry = FALSE
+  )
+
+single_state_subdiv
+```
+
+But, if you try to get county subdivision data for more than one state in a single `get_acs()` call, you get an error.
+
+```{r multi state subdiv error, results = "hide", warning = TRUE, message = TRUE, error = TRUE}
+get_acs(
+  geography = "county subdivision",
+  variables = my_vars,
+  state = my_states,
+  year = 2016,
+  survey = "acs5",
+  geometry = FALSE
+  )
+```
+
+The solution to this problem is to call `get_acs()` for each state you need. One of the easiest way to setup a loop like this is by using the [`map` family](https://purrr.tidyverse.org/reference/map.html) of functions from the `purrr` package. In this case, we'll use `map_dfr()` to combine the results of calling `get_acs()` for each state into one data frame.
+
+```{r multi state subdiv}
+multi_state_subdiv <- map_dfr(
+  my_states,
+    ~ get_acs(
+        geography = "county subdivision",
+        variables = my_vars,
+        state = .,
+        year = 2016,
+        survey = "acs5",
+        geometry = FALSE
+        )
+    )
+
+multi_state_subdiv
+```
+
+This approach works well for county subdivisions, but currently will fail if you try to get block group data. It will also fail when requesting county subdivisions from the Decennial Census (`get_decennial()`) instead of the American Community Survey. In both of these case, we must specify the counties we want as well as the states to the Census API.
+
+Conviniently, `tidycensus` provides a built-in table of counties and states along with their FIPS codes.
+
+```{r fips code table}
+head(tidycensus::fips_codes)
+```
+
+We can filter the `fips_codes` data frame to include only counties in our selected states, and then use `map2_dfr()` to loop over each of the state/county FIPS code combinations in this table. This will make a separate call to `get_acs()` and the Census API for each county in our three states.
+
+```{r map2}
+my_counties <- fips_codes %>%
+  filter(state %in% my_states)
+
+multi_state_bg <- map2_dfr(
+  my_counties$state_code, my_counties$county_code,
+    ~ get_acs(
+        geography = "block group",
+        variables = my_vars,
+        state = .x,
+        county = .y,
+        year = 2016,
+        survey = "acs5",
+        geometry = FALSE
+        )
+    )
+
+multi_state_bg
+```
+
+Lastly, one of the great features of `tidycensus` is that it links with the `tigris` package to get simple feature geometries along with Census estimates. This makes it quite easy to make a choropleth map with Census data. So we'll repeat our previous call and specify `geometry = TRUE` in `get_acs()`.
+
+But to do this for multiple states, we have to modify our previous approach because it is [currently not possible](https://github.com/r-spatial/mapedit/issues/46) to use `bind_rows()` with `sf` objects (`map2_dfr()` uses `bind_rows()` to combine the results of the loop). One way around this is to use `map2()` and then combine the list of data frames with the `rbind.sf` method.
+
+```{r bg geometry, results = "hide"}
+multi_state_bg_geo_list <- map2(
+  my_counties$state_code, my_counties$county_code,
+    ~ get_acs(
+        geography = "block group",
+        variables = my_vars,
+        state = .x,
+        county = .y,
+        year = 2016,
+        survey = "acs5",
+        geometry = TRUE,
+        output = "wide"  # get data in wide format for easier mapping
+        )
+    )
+```
+```{r bg geometry reduce}
+multi_state_bg_geo <- reduce(multi_state_bg_geo_list, rbind)
+multi_state_bg_geo
+
+```
+
+And now since we've got the data and geometry in an `sf` object, we might as well make a quick map using the [`tmap` package](https://cran.r-project.org/web/packages/tmap/vignettes/tmap-getstarted.html)!
+
+```{r make-map, cache = FALSE, out.width = "100%", out.height = "500px", fig.show = "asis"}
+# define a little helper function to format dollars for map
+make_dollar <- function(x, digits = 0) {
+  paste0("$", formatC(x, digits = digits, format = "f", big.mark = ","))
+}
+
+tmap_mode("view")
+tm_shape(multi_state_bg_geo) +
+  tm_fill(
+    col = "median_incomeE",
+    palette = "Greens",
+    style = "jenks",
+    contrast = c(0.3, 1),
+    title = "Median HH Income",
+    textNA = "Not Available",
+    id = "NAME",
+    popup.vars = c(
+      "Median HH Income" = "median_incomeE",
+      "Total Population" = "total_popE"
+    ),
+    popup.format = list(
+      median_incomeE = list(fun = make_dollar),
+      total_popE = list(format = "f", digits = 0)
+      ),
+    legend.format = list(fun = make_dollar)
+  ) +
+  tm_borders(col = "darkgray") +
+  tm_view(
+    alpha = 0.85,
+    basemaps = "Stamen.TonerLite",
+    view.legend.position = c("right", "bottom")
+    )
+```

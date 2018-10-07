@@ -2,6 +2,7 @@ baseurl = "https://mattherman.info/"
 theme = "cocoa-eh-hugo-theme"
 builddrafts = false
 canonifyurls = true
+enableEmoji = true
 contentdir = "content"
 languageCode = "en-US"
 layoutdir = "layouts"
@@ -45,7 +46,6 @@ posts_navigation = true
 # issoHost = "comments.domain.tld:1234"
 # githubRepo = "githubUsername/repositoryName"
 small_banner_logo = false
-noshowreadtime = true
 
 [params.colors]
 # identifier = "#527fc1f"

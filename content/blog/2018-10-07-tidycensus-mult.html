@@ -49,18 +49,18 @@ multi_state_tract &lt;- get_acs(
 
 multi_state_tract
 ## # A tibble: 1,674 x 5
-##    GEOID      NAME                                 variable    estimate   moe
-##    &lt;chr&gt;      &lt;chr&gt;                                &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
-##  1 330019651… Census Tract 9651, Belknap County, … total_pop       3280    19
-##  2 330019651… Census Tract 9651, Belknap County, … median_inc…    73967  7959
-##  3 330019652… Census Tract 9652, Belknap County, … total_pop       3196   228
-##  4 330019652… Census Tract 9652, Belknap County, … median_inc…    52596 17474
-##  5 330019653… Census Tract 9653, Belknap County, … total_pop       3158   225
-##  6 330019653… Census Tract 9653, Belknap County, … median_inc…    69199  9189
-##  7 330019654… Census Tract 9654, Belknap County, … total_pop       2976    27
-##  8 330019654… Census Tract 9654, Belknap County, … median_inc…    72721  7287
-##  9 330019655… Census Tract 9655.98, Belknap Count… total_pop       3567    18
-## 10 330019655… Census Tract 9655.98, Belknap Count… median_inc…    51619  8567
+##    GEOID     NAME                                 variable    estimate   moe
+##    &lt;chr&gt;     &lt;chr&gt;                                &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
+##  1 33001965… Census Tract 9651, Belknap County, … total_pop       3280    19
+##  2 33001965… Census Tract 9651, Belknap County, … median_inc…    73967  7959
+##  3 33001965… Census Tract 9652, Belknap County, … total_pop       3196   228
+##  4 33001965… Census Tract 9652, Belknap County, … median_inc…    52596 17474
+##  5 33001965… Census Tract 9653, Belknap County, … total_pop       3158   225
+##  6 33001965… Census Tract 9653, Belknap County, … median_inc…    69199  9189
+##  7 33001965… Census Tract 9654, Belknap County, … total_pop       2976    27
+##  8 33001965… Census Tract 9654, Belknap County, … median_inc…    72721  7287
+##  9 33001965… Census Tract 9655.98, Belknap Count… total_pop       3567    18
+## 10 33001965… Census Tract 9655.98, Belknap Count… median_inc…    51619  8567
 ## # … with 1,664 more rows</code></pre>
 <p>Similarly, if you want to download county subdivision data for all counties in a single state, you can just set the <code>geography</code> parameter to <code>&quot;county subdivision&quot;</code>.</p>
 <pre class="r"><code>single_state_subdiv &lt;- get_acs(
@@ -74,18 +74,18 @@ multi_state_tract
 
 single_state_subdiv
 ## # A tibble: 510 x 5
-##    GEOID      NAME                                variable     estimate   moe
-##    &lt;chr&gt;      &lt;chr&gt;                               &lt;chr&gt;           &lt;dbl&gt; &lt;dbl&gt;
-##  1 5000100325 Addison town, Addison County, Verm… total_pop        1447   146
-##  2 5000100325 Addison town, Addison County, Verm… median_inco…    77946  5322
-##  3 5000108575 Bridport town, Addison County, Ver… total_pop        1226   183
-##  4 5000108575 Bridport town, Addison County, Ver… median_inco…    63516  8194
-##  5 5000109025 Bristol town, Addison County, Verm… total_pop        3907    16
-##  6 5000109025 Bristol town, Addison County, Verm… median_inco…    53662  9153
-##  7 5000116000 Cornwall town, Addison County, Ver… total_pop        1078   113
-##  8 5000116000 Cornwall town, Addison County, Ver… median_inco…    76989  9870
-##  9 5000126300 Ferrisburgh town, Addison County, … total_pop        2750    44
-## 10 5000126300 Ferrisburgh town, Addison County, … median_inco…    65956  6950
+##    GEOID      NAME                               variable     estimate   moe
+##    &lt;chr&gt;      &lt;chr&gt;                              &lt;chr&gt;           &lt;dbl&gt; &lt;dbl&gt;
+##  1 5000100325 Addison town, Addison County, Ver… total_pop        1447   146
+##  2 5000100325 Addison town, Addison County, Ver… median_inco…    77946  5322
+##  3 5000108575 Bridport town, Addison County, Ve… total_pop        1226   183
+##  4 5000108575 Bridport town, Addison County, Ve… median_inco…    63516  8194
+##  5 5000109025 Bristol town, Addison County, Ver… total_pop        3907    16
+##  6 5000109025 Bristol town, Addison County, Ver… median_inco…    53662  9153
+##  7 5000116000 Cornwall town, Addison County, Ve… total_pop        1078   113
+##  8 5000116000 Cornwall town, Addison County, Ve… median_inco…    76989  9870
+##  9 5000126300 Ferrisburgh town, Addison County,… total_pop        2750    44
+## 10 5000126300 Ferrisburgh town, Addison County,… median_inco…    65956  6950
 ## # … with 500 more rows</code></pre>
 <p>But, if you try to get county subdivision data for more than one state in a single <code>get_acs()</code> call, you get an error.</p>
 <pre class="r"><code>get_acs(
@@ -113,18 +113,18 @@ single_state_subdiv
 
 multi_state_subdiv
 ## # A tibble: 2,096 x 5
-##    GEOID     NAME                                  variable    estimate   moe
-##    &lt;chr&gt;     &lt;chr&gt;                                 &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
-##  1 33001010… Alton town, Belknap County, New Hamp… total_pop       5285    16
-##  2 33001010… Alton town, Belknap County, New Hamp… median_inc…    76676 11670
-##  3 33001032… Barnstead town, Belknap County, New … total_pop       4631    18
-##  4 33001032… Barnstead town, Belknap County, New … median_inc…    70037  6457
-##  5 33001047… Belmont town, Belknap County, New Ha… total_pop       7281    19
-##  6 33001047… Belmont town, Belknap County, New Ha… median_inc…    60938  7012
-##  7 33001106… Center Harbor town, Belknap County, … total_pop       1011   187
-##  8 33001106… Center Harbor town, Belknap County, … median_inc…    70625 20060
-##  9 33001287… Gilford town, Belknap County, New Ha… total_pop       7103    36
-## 10 33001287… Gilford town, Belknap County, New Ha… median_inc…    63125 10372
+##    GEOID     NAME                                 variable    estimate   moe
+##    &lt;chr&gt;     &lt;chr&gt;                                &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
+##  1 33001010… Alton town, Belknap County, New Ham… total_pop       5285    16
+##  2 33001010… Alton town, Belknap County, New Ham… median_inc…    76676 11670
+##  3 33001032… Barnstead town, Belknap County, New… total_pop       4631    18
+##  4 33001032… Barnstead town, Belknap County, New… median_inc…    70037  6457
+##  5 33001047… Belmont town, Belknap County, New H… total_pop       7281    19
+##  6 33001047… Belmont town, Belknap County, New H… median_inc…    60938  7012
+##  7 33001106… Center Harbor town, Belknap County,… total_pop       1011   187
+##  8 33001106… Center Harbor town, Belknap County,… median_inc…    70625 20060
+##  9 33001287… Gilford town, Belknap County, New H… total_pop       7103    36
+## 10 33001287… Gilford town, Belknap County, New H… median_inc…    63125 10372
 ## # … with 2,086 more rows</code></pre>
 <p>This approach works well for county subdivisions, but currently will fail if you try to get block group data. It will also fail when requesting county subdivisions from the Decennial Census (<code>get_decennial()</code>) instead of the American Community Survey. In both of these case, we must specify the counties we want as well as the states to the Census API.</p>
 <p>Conviniently, <code>tidycensus</code> provides a built-in table of counties and states along with their FIPS codes.</p>
@@ -155,18 +155,18 @@ multi_state_bg &lt;- map2_dfr(
 
 multi_state_bg
 ## # A tibble: 5,060 x 5
-##    GEOID      NAME                                  variable   estimate   moe
-##    &lt;chr&gt;      &lt;chr&gt;                                 &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
-##  1 230010101… Block Group 1, Census Tract 101, And… total_pop       759   224
-##  2 230010101… Block Group 1, Census Tract 101, And… median_in…    16553  2966
-##  3 230010101… Block Group 2, Census Tract 101, And… total_pop       957   185
-##  4 230010101… Block Group 2, Census Tract 101, And… median_in…    20048  5005
-##  5 230010102… Block Group 1, Census Tract 102, And… total_pop       917   308
-##  6 230010102… Block Group 1, Census Tract 102, And… median_in…    34271 32407
-##  7 230010102… Block Group 2, Census Tract 102, And… total_pop      1242   433
-##  8 230010102… Block Group 2, Census Tract 102, And… median_in…    38981 15574
-##  9 230010102… Block Group 3, Census Tract 102, And… total_pop      2525   467
-## 10 230010102… Block Group 3, Census Tract 102, And… median_in…    64278 20639
+##    GEOID      NAME                                 variable   estimate   moe
+##    &lt;chr&gt;      &lt;chr&gt;                                &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+##  1 230010101… Block Group 1, Census Tract 101, An… total_pop       759   224
+##  2 230010101… Block Group 1, Census Tract 101, An… median_in…    16553  2966
+##  3 230010101… Block Group 2, Census Tract 101, An… total_pop       957   185
+##  4 230010101… Block Group 2, Census Tract 101, An… median_in…    20048  5005
+##  5 230010102… Block Group 1, Census Tract 102, An… total_pop       917   308
+##  6 230010102… Block Group 1, Census Tract 102, An… median_in…    34271 32407
+##  7 230010102… Block Group 2, Census Tract 102, An… total_pop      1242   433
+##  8 230010102… Block Group 2, Census Tract 102, An… median_in…    38981 15574
+##  9 230010102… Block Group 3, Census Tract 102, An… total_pop      2525   467
+## 10 230010102… Block Group 3, Census Tract 102, An… median_in…    64278 20639
 ## # … with 5,050 more rows</code></pre>
 <p>Lastly, one of the great features of <code>tidycensus</code> is that it links with the <code>tigris</code> package to get simple feature geometries along with Census estimates. This makes it quite easy to make a choropleth map with Census data. So we’ll repeat our previous call and specify <code>geometry = TRUE</code> in <code>get_acs()</code>.</p>
 <p>But to do this for multiple states, we have to modify our previous approach because it is <a href="https://github.com/r-spatial/mapedit/issues/46">currently not possible</a> to use <code>bind_rows()</code> with <code>sf</code> objects (<code>map2_dfr()</code> uses <code>bind_rows()</code> to combine the results of the loop). One way around this is to use <code>map2()</code> and then combine the list of data frames with the <code>rbind.sf</code> method.</p>

@@ -21,7 +21,7 @@ knitr::opts_chunk$set(
 knitr::knit_hooks$set(inline = function(x) {
   prettyNum(x, big.mark = ",")
 })
-options(width = 78, dplyr.width = 78)
+options(width = 77, dplyr.width = 77)
 options(tigris_use_cache = TRUE)
 library(tidyverse)
 library(tidycensus)

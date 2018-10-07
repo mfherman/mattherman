@@ -1,5 +1,5 @@
 ---
-title: Getting Census data from mulitple states using tidycensus and purrr
+title: Getting Census data from multiple states using tidycensus and purrr
 author:
 date: "2018-10-07"
 slug: tidycensus-mult
@@ -127,7 +127,7 @@ multi_state_subdiv
 ## 10 33001287… Gilford town, Belknap County, New H… median_inc…    63125 10372
 ## # … with 2,086 more rows</code></pre>
 <p>This approach works well for county subdivisions, but currently will fail if you try to get block group data. It will also fail when requesting county subdivisions from the Decennial Census (<code>get_decennial()</code>) instead of the American Community Survey. In both of these case, we must specify the counties we want as well as the states to the Census API.</p>
-<p>Conviniently, <code>tidycensus</code> provides a built-in table of counties and states along with their FIPS codes.</p>
+<p>Conveniently, <code>tidycensus</code> provides a built-in table of counties and states along with their FIPS codes.</p>
 <pre class="r"><code>head(tidycensus::fips_codes)
 ##   state state_code state_name county_code         county
 ## 1    AL         01    Alabama         001 Autauga County

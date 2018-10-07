@@ -1,5 +1,5 @@
 ---
-title: Getting Census data from mulitple states using tidycensus and purrr
+title: Getting Census data from multiple states using tidycensus and purrr
 author:
 date: "2018-10-07"
 slug: tidycensus-mult
@@ -108,7 +108,7 @@ multi_state_subdiv
 
 This approach works well for county subdivisions, but currently will fail if you try to get block group data. It will also fail when requesting county subdivisions from the Decennial Census (`get_decennial()`) instead of the American Community Survey. In both of these case, we must specify the counties we want as well as the states to the Census API.
 
-Conviniently, `tidycensus` provides a built-in table of counties and states along with their FIPS codes.
+Conveniently, `tidycensus` provides a built-in table of counties and states along with their FIPS codes.
 
 ```{r fips code table}
 head(tidycensus::fips_codes)

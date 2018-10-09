@@ -55,9 +55,8 @@ multi_state_tract <- get_acs(
   year = 2016,
   survey = "acs5",
   geometry = FALSE
-  )
-
-multi_state_tract
+  ) %>% 
+  print()
 ```
 
 Similarly, if you want to download county subdivision data for all counties in a single state, you can just set the `geography` parameter to `"county subdivision"`.
@@ -70,9 +69,8 @@ single_state_subdiv <- get_acs(
   year = 2016,
   survey = "acs5",
   geometry = FALSE
-  )
-
-single_state_subdiv
+  ) %>% 
+  print()
 ```
 
 But, if you try to get county subdivision data for more than one state in a single `get_acs()` call, you get an error.
@@ -101,9 +99,8 @@ multi_state_subdiv <- map_dfr(
         survey = "acs5",
         geometry = FALSE
         )
-    )
-
-multi_state_subdiv
+    ) %>% 
+  print()
 ```
 
 This approach works well for county subdivisions, but currently will fail if you try to get block group data. It will also fail when requesting county subdivisions from the Decennial Census (`get_decennial()`) instead of the American Community Survey. In both of these cases, we must specify the counties we want as well as the states to the Census API.
@@ -131,9 +128,8 @@ multi_state_bg <- map2_dfr(
         survey = "acs5",
         geometry = FALSE
         )
-    )
-
-multi_state_bg
+    ) %>% 
+  print()
 ```
 
 Lastly, one of the great features of `tidycensus` is that it links with the `tigris` package to get simple feature geometries along with Census estimates. This makes it quite easy to make a choropleth map with Census data. So we'll repeat our previous call and specify `geometry = TRUE` in `get_acs()`.
@@ -156,9 +152,8 @@ multi_state_bg_geo_list <- map2(
     )
 ```
 ```{r bg geometry reduce}
-multi_state_bg_geo <- reduce(multi_state_bg_geo_list, rbind)
-multi_state_bg_geo
-
+multi_state_bg_geo <- reduce(multi_state_bg_geo_list, rbind) %>% 
+  print()
 ```
 
 And now since we've got the data and geometry in an `sf` object, we might as well make a quick map using the [`tmap` package](https://cran.r-project.org/web/packages/tmap/vignettes/tmap-getstarted.html)!

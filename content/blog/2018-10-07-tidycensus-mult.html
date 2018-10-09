@@ -45,9 +45,8 @@ multi_state_tract &lt;- get_acs(
   year = 2016,
   survey = &quot;acs5&quot;,
   geometry = FALSE
-  )
-
-multi_state_tract
+  ) %&gt;% 
+  print()
 ## # A tibble: 1,674 x 5
 ##    GEOID     NAME                                 variable    estimate   moe
 ##    &lt;chr&gt;     &lt;chr&gt;                                &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
@@ -70,9 +69,8 @@ multi_state_tract
   year = 2016,
   survey = &quot;acs5&quot;,
   geometry = FALSE
-  )
-
-single_state_subdiv
+  ) %&gt;% 
+  print()
 ## # A tibble: 510 x 5
 ##    GEOID      NAME                               variable     estimate   moe
 ##    &lt;chr&gt;      &lt;chr&gt;                              &lt;chr&gt;           &lt;dbl&gt; &lt;dbl&gt;
@@ -109,9 +107,8 @@ single_state_subdiv
         survey = &quot;acs5&quot;,
         geometry = FALSE
         )
-    )
-
-multi_state_subdiv
+    ) %&gt;% 
+  print()
 ## # A tibble: 2,096 x 5
 ##    GEOID     NAME                                 variable    estimate   moe
 ##    &lt;chr&gt;     &lt;chr&gt;                                &lt;chr&gt;          &lt;dbl&gt; &lt;dbl&gt;
@@ -151,9 +148,8 @@ multi_state_bg &lt;- map2_dfr(
         survey = &quot;acs5&quot;,
         geometry = FALSE
         )
-    )
-
-multi_state_bg
+    ) %&gt;% 
+  print()
 ## # A tibble: 5,060 x 5
 ##    GEOID      NAME                                 variable   estimate   moe
 ##    &lt;chr&gt;      &lt;chr&gt;                                &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
@@ -183,8 +179,8 @@ multi_state_bg
         output = &quot;wide&quot;  # get data in wide format for easier mapping
         )
     )</code></pre>
-<pre class="r"><code>multi_state_bg_geo &lt;- reduce(multi_state_bg_geo_list, rbind)
-multi_state_bg_geo
+<pre class="r"><code>multi_state_bg_geo &lt;- reduce(multi_state_bg_geo_list, rbind) %&gt;% 
+  print()
 ## Simple feature collection with 2530 features and 6 fields
 ## geometry type:  GEOMETRY
 ## dimension:      XY

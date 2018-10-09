@@ -1,0 +1,134 @@
+---
+title: Point-in-polygon with sf
+author:
+date: "2018-10-09"
+slug: point-in-poly
+draft: false
+tags:
+  - rstats
+  - mapping
+  - sf
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  cache = TRUE, warning = FALSE, message = FALSE, collapse = TRUE,
+  echo = TRUE, dpi = 180, cache.lazy = FALSE,
+  fig.retina = 2
+)
+
+knitr::knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark = ",")
+})
+options(width = 77, dplyr.width = 77)
+options(tigris_use_cache = TRUE)
+library(tidyverse)
+library(RSocrata)
+library(sf)
+library(keyring)
+library(tmap)
+library(units)
+```
+
+During graduate school, I started working with spatial data and making maps using ArcGIS. It was the primary tool used by my Geography professors, it was installed on all the computers in the lab, and hey, point and click, who doesn't love point and click? But very quickly I became frustrated with the GUI and ArcGIS was really slow for seemingly simple operations.
+
+For one project, I wanted to count the number of arrests made in certain neighborhoods. I had the XY point coordinates of about 50,000 arrests and polygons of each Census tract in New York City (about 2,200). So I slog my way through the spatial join menu, select my layers, and then...wait. I don't remember how long it took, but I knew there had to be a better way.
+
+This was around the time the [`sf` package](https://r-spatial.github.io/sf/) was getting off the ground and I dove into spatial processing in R. I soon discovered there was a much better way: I stopped using ArcGIS and did all my mapping in R.
+
+Anyhow, that was a long-winded introduction to this short post about how to perform a point-in-polygon operation using `sf`. 
+
+---
+
+For this example, I'm going to use data from the [New York City 2015 Tree Census](https://www.nycgovparks.org/trees/treescount). Volunteers and Parks Department staff counted all 650,000+ trees on the streets of New York and fortunately for us, they put the results on the [NYC Open Data portal](https://opendata.cityofnewyork.us/).
+
+The first step is to grab the tree data via the NYC Open Data API and convert it into an `sf` object. (If don't already have an app token set up for NYC Open Data, the first first step is to [create an account and key](https://data.cityofnewyork.us/signup).)
+
+```{r get tree data}
+library(tidyverse)
+library(sf)
+library(RSocrata) # to download data from the city api
+library(keyring)  # for secure app token access
+library(units)
+library(tmap)
+
+# set up url for api call
+base <- "https://data.cityofnewyork.us/resource/"
+resource <- "nwxe-4ae8"  # tree count 2015 data set
+vars <- c("x_sp", "y_sp")  # get x and y coordinates only
+
+call <- paste0(base, resource, ".json", "?$select=", paste(vars, collapse = ", "))
+
+# download data -- this can take a little while!
+# my api access token is saved via keyring package
+tree <- read.socrata(call, app_token = key_get("NYC Open Data")) %>%
+  as_tibble()
+
+# convert tree data frame into sf object
+tree_sf <- tree %>%
+  mutate_at(vars(x_sp, y_sp), as.numeric) %>%   # coordinates must be numeric
+  st_as_sf(
+    coords = c("x_sp", "y_sp"),
+    agr = "constant",
+    crs = 2263,        # nad83 / new york long island projection
+    stringsAsFactors = FALSE,
+    remove = TRUE
+    )
+```
+
+Next, we'll pull down Census tract geometry for New York City, also from the NYC Open Data website. We have to convert this to the same projection as the point data to do the spaital join in the next step.
+
+```{r get tract geometry}
+geo_url <- "https://data.cityofnewyork.us/api/geospatial/fxpq-c8ku?method=export&format=GeoJSON"
+
+# read in geojson of tract geometry and calculate area of each tract in sq mi
+tract_sf <- read_sf(geo_url) %>%
+  st_transform(2263) %>%   # convert to same projection as above
+  select(boro_name, boro_ct2010) %>%
+  mutate(area = set_units(st_area(.), mi^2)) %>%
+  print()
+```
+
+Now with the point object (trees) and polygon object (Census tracts), we perform a spatial join. Using `st_join()`, we'll find which of the `r nrow(tract_sf)` polygons in `tract_sf` that each of the `r nrow(tree)` points in `tree_sf` is within. The result of this function will be an `sf` data frame with each row of `tree_sf` appended with the columns from `tract_sf` of the appropriate tract. After that, we'll count up the number of trees in each tract, join the count back into the original tract data frame and calculate the tree density as trees per square mile.
+
+```{r point in poly}
+# find points within polygons
+tree_in_tract <- st_join(tree_sf, tract_sf, join = st_within)
+
+# count trees per census tract
+tree_tract_count <- count(as_tibble(tree_in_tract), boro_ct2010) %>%
+  print()
+
+# join tree count with tract df, calc tree density
+tract_tree_sf <- left_join(tract_sf, tree_tract_count) %>%
+  mutate(tree_sq_mi = as.numeric(n / area))  %>%
+  print()
+```
+
+And there you have it. Finding points in polygons in just a few easy (programatic!) steps. And how about a quick interactive choropleth map of this data. Bye, bye ArcGIS!!!
+
+```{r tree map, cache = FALSE, out.width = "100%", out.height = "500px", fig.show = "asis"}
+tmap_mode("view")
+tm_shape(tract_tree_sf) +
+  tm_fill(
+    col = "tree_sq_mi",
+    palette = "Greens",
+    style = "cont",
+    contrast = c(0.1, 1),
+    title = "Trees per Sq Mile",
+    id = "boro_ct2010",
+    showNA = FALSE,
+    alpha = 0.8,
+    popup.vars = c(
+      "Total Trees" = "n",
+      "Trees/Sq Mi" = "tree_sq_mi"
+    ),
+    popup.format = list(
+      n = list(format = "f", digits = 0),
+      tree_sq_mi = list(format = "f", digits = 0)
+    )
+  ) +
+  tm_borders(col = "darkgray", lwd = 0.7) + 
+  tm_view(basemaps = "Stamen.TonerLite")
+```

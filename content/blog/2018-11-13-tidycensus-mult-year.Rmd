@@ -3,7 +3,7 @@ title: Getting Census data from multiple years using tidycensus and purrr
 author:
 date: "2018-11-13"
 slug: tidycensus-mult-year
-draft: true
+draft: false
 tags:
   - rstats
   - tidycensus

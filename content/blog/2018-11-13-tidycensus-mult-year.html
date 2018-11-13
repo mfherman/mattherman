@@ -12,7 +12,7 @@ tags:
 
 
 
-<p>This is a follow-up to an <a href="%22/blog/tidycensus-mult/%22">earlier blog post</a> where I walked through how to download Census data from multiple state/county combinations using <code>tidycensus</code> and <code>purrr</code>. In this post, I’ll show how to get Census data from <strong>multiple years</strong> for the same geographic area. This is useful if you want to compare change over time.</p>
+<p>This is a follow-up to an <a href="/blog/tidycensus-mult/">earlier blog post</a> where I walked through how to download Census data from multiple state/county combinations using <code>tidycensus</code> and <code>purrr</code>. In this post, I’ll show how to get Census data from <strong>multiple years</strong> for the same geographic area. This is useful if you want to compare change over time.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
 <p>The approach is similar to the prior post: I use <code>purrr::map_dfr()</code> to loop over a list of years and combine the results of <code>get_acs()</code> into one tibble. In this example, I’ll get the total population and median income for each of the nine counties in the San Francisco Bay Area for 2012 and 2017.</p>
 <pre class="r"><code>library(tidyverse)
 library(tidycensus)
@@ -106,7 +106,7 @@ bay_area_12_17 %&gt;%
 ## 9 06095 Solano County, Cal… median_in…     66314     77133  10819       16.3</code></pre>
 <p>From that table, we see that of the nine counties in the Bay Area, San Francisco County had the largest percent increase in median income between 2012 and 2017. The median income in 2012 was $78,010 and it increased to $110,816 in 2017, a percent change of 42.1%.</p>
 <p>That table is all well and good, but what if we want to make a map of the data? One of the great things about <code>tidycensus</code> is that it enables you to easily download geometry along with Census estimates.</p>
-<p>As I noted in <a href="%22/blog/tidycensus-mult/%22">my previous post on this topic</a> , when working with <code>sf</code> objects, it is not possible to use <code>purrr::map_df()</code> or <code>dplyr::bind_rows()</code>. Instead, I will use <code>map()</code> to return a list of <code>sf</code> objects from <code>get_acs()</code> for each year and then combine them with <code>purrr::reduce()</code> and <code>rbind()</code>. One additional wrinkle is to add the year as a new variable to each object in the list before combining.</p>
+<p>As I noted in <a href="/blog/tidycensus-mult/">my previous post on this topic</a> , when working with <code>sf</code> objects, it is not possible to use <code>purrr::map_df()</code> or <code>dplyr::bind_rows()</code>. Instead, I will use <code>map()</code> to return a list of <code>sf</code> objects from <code>get_acs()</code> for each year and then combine them with <code>purrr::reduce()</code> and <code>rbind()</code>. One additional wrinkle is to add the year as a new variable to each object in the list before combining.</p>
 <pre class="r"><code># loop over year list and get acs estimates with sf geometry
 bay_area_multi_year_list &lt;- map(
   years,
@@ -189,3 +189,9 @@ bay_area_geo %&gt;%
     ) +
   theme_void()</code></pre>
 <p><img src="/blog/2018-11-13-tidycensus-mult-year_files/figure-html/map-1.png" width="1260" /></p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>It is important not to use overlapping years when comparing 5-year American Community Survey estimates. For example, you can’t compare 2010-2014 estimates to 2012-2016 estimates, but you could compare 2007-2011 to 2012-2016. In this blog post, I simply use 1-year ACS data which is aviable for large geographies (areas with populations greater than 65,000). To compare smaller areas such as census tracts you would need to use non-overlapping 5-year estimates.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+</ol>
+</div>

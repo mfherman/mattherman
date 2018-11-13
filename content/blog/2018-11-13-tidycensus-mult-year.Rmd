@@ -26,7 +26,9 @@ library(ggsflabel)
 library(scales)
 ```
 
-This is a follow-up to an [earlier blog post]("/blog/tidycensus-mult/") where I walked through how to download Census data from multiple state/county combinations using `tidycensus` and `purrr`. In this post, I'll show how to get Census data from __multiple years__ for the same geographic area. This is useful if you want to compare change over time.
+This is a follow-up to an [earlier blog post](/blog/tidycensus-mult/) where I walked through how to download Census data from multiple state/county combinations using `tidycensus` and `purrr`. In this post, I'll show how to get Census data from __multiple years__ for the same geographic area. This is useful if you want to compare change over time.[^year]
+
+[^year]: It is important not to use overlapping years when comparing 5-year American Community Survey estimates. For example, you can't compare 2010-2014 estimates to 2012-2016 estimates, but you could compare 2007-2011 to 2012-2016. In this blog post, I simply use 1-year ACS data which is aviable for large geographies (areas with populations greater than 65,000). To compare smaller areas such as census tracts you would need to use non-overlapping 5-year estimates.
 
 The approach is similar to the prior post: I use `purrr::map_dfr()` to loop over a list of years and combine the results of `get_acs()` into one tibble. In this example, I'll get the total population and median income for each of the nine counties in the San Francisco Bay Area for 2012 and 2017.
 
@@ -105,7 +107,7 @@ From that table, we see that of the nine counties in the Bay Area, San Francisco
 
 That table is all well and good, but what if we want to make a map of the data? One of the great things about `tidycensus` is that it enables you to easily download geometry along with Census estimates. 
 
-As I noted in [my previous post on this topic]("/blog/tidycensus-mult/") , when working with `sf` objects, it is not possible to use `purrr::map_df()` or `dplyr::bind_rows()`. Instead, I will use `map()` to return a list of `sf` objects from `get_acs()` for each year and then combine them with `purrr::reduce()` and `rbind()`. One additional wrinkle is to add the year as a new variable to each object in the list before combining.
+As I noted in [my previous post on this topic](/blog/tidycensus-mult/) , when working with `sf` objects, it is not possible to use `purrr::map_df()` or `dplyr::bind_rows()`. Instead, I will use `map()` to return a list of `sf` objects from `get_acs()` for each year and then combine them with `purrr::reduce()` and `rbind()`. One additional wrinkle is to add the year as a new variable to each object in the list before combining.
 
 ```{r}
 # loop over year list and get acs estimates with sf geometry

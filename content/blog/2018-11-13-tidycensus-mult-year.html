@@ -1,0 +1,191 @@
+---
+title: Getting Census data from multiple years using tidycensus and purrr
+author:
+date: "2018-11-13"
+slug: tidycensus-mult-year
+draft: true
+tags:
+  - rstats
+  - tidycensus
+  - purrr
+---
+
+
+
+<p>This is a follow-up to an <a href="%22/blog/tidycensus-mult/%22">earlier blog post</a> where I walked through how to download Census data from multiple state/county combinations using <code>tidycensus</code> and <code>purrr</code>. In this post, I’ll show how to get Census data from <strong>multiple years</strong> for the same geographic area. This is useful if you want to compare change over time.</p>
+<p>The approach is similar to the prior post: I use <code>purrr::map_dfr()</code> to loop over a list of years and combine the results of <code>get_acs()</code> into one tibble. In this example, I’ll get the total population and median income for each of the nine counties in the San Francisco Bay Area for 2012 and 2017.</p>
+<pre class="r"><code>library(tidyverse)
+library(tidycensus)
+library(sf)
+library(ggsflabel)
+library(scales)
+
+# define years using purrr::lst to automatically creates a named list
+# which will help later when we combine the results in a single tibble
+years &lt;- lst(2012, 2017) 
+
+# which counties?
+my_counties &lt;- c(
+  &quot;Alameda&quot;,
+  &quot;Contra Costa&quot;,
+  &quot;Marin&quot;,
+  &quot;Napa&quot;,
+  &quot;San Francisco&quot;,
+  &quot;San Mateo&quot;,
+  &quot;Santa Clara&quot;,
+  &quot;Solano&quot;,
+  &quot;Sonoma&quot;
+  )
+
+# which census variables?
+my_vars &lt;- c(
+  total_pop = &quot;B01003_001&quot;,
+  median_income = &quot;B19013_001&quot;
+  )
+
+# loop over list of years and get 1 year acs estimates
+bay_area_multi_year &lt;- map_dfr(
+  years,
+  ~ get_acs(
+      geography = &quot;county&quot;,
+      variables = my_vars,
+      state = &quot;CA&quot;,
+      county = my_counties,
+      year = .x,
+      survey = &quot;acs1&quot;,
+      geometry = FALSE
+      ),
+  .id = &quot;year&quot;  # when combining results, add id var (name of list item)
+  ) %&gt;%
+  select(-moe) %&gt;%  # shhhh
+  arrange(variable, NAME) %&gt;% 
+  print()
+## # A tibble: 36 x 5
+##    year  GEOID NAME                             variable      estimate
+##    &lt;chr&gt; &lt;chr&gt; &lt;chr&gt;                            &lt;chr&gt;            &lt;dbl&gt;
+##  1 2012  06001 Alameda County, California       median_income    70500
+##  2 2017  06001 Alameda County, California       median_income    96296
+##  3 2012  06013 Contra Costa County, California  median_income    74177
+##  4 2017  06013 Contra Costa County, California  median_income    95339
+##  5 2012  06041 Marin County, California         median_income    90535
+##  6 2017  06041 Marin County, California         median_income   113908
+##  7 2012  06055 Napa County, California          median_income    68553
+##  8 2017  06055 Napa County, California          median_income    86562
+##  9 2012  06075 San Francisco County, California median_income    73012
+## 10 2017  06075 San Francisco County, California median_income   110816
+## # ... with 26 more rows</code></pre>
+<p>To compare years, I’ll reshape the data and then calculate absolute change and percent change from 2012 to 2017. I’ll also adjust the 2012 median income estimate for inflation.</p>
+<pre class="r"><code># reshape and calculate percent change in income
+bay_area_12_17 &lt;- bay_area_multi_year %&gt;% 
+  spread(year, estimate, sep = &quot;_&quot;) %&gt;% 
+  mutate(
+    year_2012 = if_else(
+      variable == &quot;median_income&quot;,
+      round(year_2012 * 1.068449, 0),  # multiply 2012 by cpi inflation factor
+      year_2012
+      ),
+    change = year_2017 - year_2012,
+    pct_change = change / year_2012 * 100
+    )
+
+# which counties had the largest percent increase in median income?
+bay_area_12_17 %&gt;% 
+  filter(variable == &quot;median_income&quot;) %&gt;% 
+  arrange(desc(pct_change))
+## # A tibble: 9 x 7
+##   GEOID NAME                variable   year_2012 year_2017 change pct_change
+##   &lt;chr&gt; &lt;chr&gt;               &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+## 1 06075 San Francisco Coun… median_in…     78010    110816  32806       42.1
+## 2 06081 San Mateo County, … median_in…     87195    116653  29458       33.8
+## 3 06001 Alameda County, Ca… median_in…     75326     96296  20970       27.8
+## 4 06097 Sonoma County, Cal… median_in…     64044     80409  16365       25.6
+## 5 06085 Santa Clara County… median_in…     97683    119035  21352       21.9
+## 6 06013 Contra Costa Count… median_in…     79254     95339  16085       20.3
+## 7 06055 Napa County, Calif… median_in…     73245     86562  13317       18.2
+## 8 06041 Marin County, Cali… median_in…     96732    113908  17176       17.8
+## 9 06095 Solano County, Cal… median_in…     66314     77133  10819       16.3</code></pre>
+<p>From that table, we see that of the nine counties in the Bay Area, San Francisco County had the largest percent increase in median income between 2012 and 2017. The median income in 2012 was $78,010 and it increased to $110,816 in 2017, a percent change of 42.1%.</p>
+<p>That table is all well and good, but what if we want to make a map of the data? One of the great things about <code>tidycensus</code> is that it enables you to easily download geometry along with Census estimates.</p>
+<p>As I noted in <a href="%22/blog/tidycensus-mult/%22">my previous post on this topic</a> , when working with <code>sf</code> objects, it is not possible to use <code>purrr::map_df()</code> or <code>dplyr::bind_rows()</code>. Instead, I will use <code>map()</code> to return a list of <code>sf</code> objects from <code>get_acs()</code> for each year and then combine them with <code>purrr::reduce()</code> and <code>rbind()</code>. One additional wrinkle is to add the year as a new variable to each object in the list before combining.</p>
+<pre class="r"><code># loop over year list and get acs estimates with sf geometry
+bay_area_multi_year_list &lt;- map(
+  years,
+  ~ get_acs(
+      geography = &quot;county&quot;,
+      variables = my_vars,
+      state = &quot;CA&quot;,
+      county = my_counties,
+      year = .x,
+      survey = &quot;acs1&quot;,
+      geometry = TRUE,
+      cb = TRUE
+      ),
+  ) %&gt;%
+  map2(years, ~ mutate(.x, year = .y))  # add year as id variable
+
+# reshape and calculate percent change in income
+bay_area_geo &lt;- reduce(bay_area_multi_year_list, rbind) %&gt;% 
+  select(-moe) %&gt;% 
+  spread(year, estimate, sep = &quot;_&quot;) %&gt;% 
+  fill(year_2012) %&gt;%
+  mutate(
+    year_2012 = if_else(
+      variable == &quot;median_income&quot;,
+      round(year_2012 * 1.068449, 0),  # multiply 2012 by cpi inflation factor
+      year_2012
+      ),
+    change = year_2017 - year_2012,
+    pct_change = change / year_2012
+    ) %&gt;% 
+  filter(!is.na(year_2017)) %&gt;% 
+  print()
+## Simple feature collection with 18 features and 7 fields
+## geometry type:  MULTIPOLYGON
+## dimension:      XY
+## bbox:           xmin: -123.5335 ymin: 36.89303 xmax: -121.2082 ymax: 38.86424
+## epsg (SRID):    4269
+## proj4string:    +proj=longlat +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +no_defs
+## First 10 features:
+##    GEOID                             NAME      variable year_2012 year_2017
+## 1  06001       Alameda County, California median_income     75326     96296
+## 2  06001       Alameda County, California     total_pop   1554720   1663190
+## 3  06013  Contra Costa County, California median_income     79254     95339
+## 4  06013  Contra Costa County, California     total_pop   1079597   1147439
+## 5  06041         Marin County, California median_income     96732    113908
+## 6  06041         Marin County, California     total_pop    256069    260955
+## 7  06055          Napa County, California median_income     73245     86562
+## 8  06055          Napa County, California     total_pop    139045    140973
+## 9  06075 San Francisco County, California median_income     78010    110816
+## 10 06075 San Francisco County, California     total_pop    825863    884363
+##    change pct_change                       geometry
+## 1   20970 0.27838993 MULTIPOLYGON (((-122.3423 3...
+## 2  108470 0.06976819 MULTIPOLYGON (((-122.3423 3...
+## 3   16085 0.20295506 MULTIPOLYGON (((-122.4298 3...
+## 4   67842 0.06284012 MULTIPOLYGON (((-122.4298 3...
+## 5   17176 0.17756275 MULTIPOLYGON (((-122.4463 3...
+## 6    4886 0.01908079 MULTIPOLYGON (((-122.4463 3...
+## 7   13317 0.18181446 MULTIPOLYGON (((-122.6464 3...
+## 8    1928 0.01386601 MULTIPOLYGON (((-122.6464 3...
+## 9   32806 0.42053583 MULTIPOLYGON (((-122.332 37...
+## 10  58500 0.07083499 MULTIPOLYGON (((-122.332 37...</code></pre>
+<p>So now I’ve got the same data as above with the addition of polygons representing the counties. This makes in a breeze to plot with a variety of mapping packages, including <code>ggplot2</code>. Here, I’ll make a choropleth map of the change in median income from 2012 to 2017 by county.</p>
+<pre class="r"><code># make that map
+bay_area_geo %&gt;%
+  filter(variable == &quot;median_income&quot;) %&gt;% 
+  separate(NAME, into = c(&quot;name&quot;, NA), sep = &quot; County&quot;) %&gt;%  # remove
+  ggplot() +
+  geom_sf(aes(fill = pct_change)) +
+  coord_sf(crs = st_crs(bay_area_geo), datum = NA) + 
+  geom_sf_label_repel(
+    aes(label = name),
+    fill = &quot;gray95&quot;,
+    size = 2.5,
+    alpha = 0.9
+    ) +
+  scale_fill_viridis_c(&quot;&quot;, labels = percent_format(5)) +
+  labs(
+    title = &quot;Where has median income increased the most?&quot;,
+    subtitle = &quot;San Francisco Bay Area, 2012 - 2017&quot;
+    ) +
+  theme_void()</code></pre>
+<p><img src="/blog/2018-11-13-tidycensus-mult-year_files/figure-html/map-1.png" width="1260" /></p>

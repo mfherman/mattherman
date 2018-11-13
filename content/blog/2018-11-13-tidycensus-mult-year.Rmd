@@ -1,0 +1,168 @@
+---
+title: Getting Census data from multiple years using tidycensus and purrr
+author:
+date: "2018-11-13"
+slug: tidycensus-mult-year
+draft: true
+tags:
+  - rstats
+  - tidycensus
+  - purrr
+---
+
+```{r setup, include = FALSE, cache = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  cache = TRUE, warning = FALSE, message = FALSE, collapse = TRUE,
+  echo = TRUE, dpi = 180, cache.lazy = FALSE,
+  fig.retina = 2
+)
+
+options(width = 76, dplyr.width = 76, scipen = 999, tigris_use_cache = TRUE)
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(ggsflabel)
+library(scales)
+```
+
+This is a follow-up to an [earlier blog post]("/blog/tidycensus-mult/") where I walked through how to download Census data from multiple state/county combinations using `tidycensus` and `purrr`. In this post, I'll show how to get Census data from __multiple years__ for the same geographic area. This is useful if you want to compare change over time.
+
+The approach is similar to the prior post: I use `purrr::map_dfr()` to loop over a list of years and combine the results of `get_acs()` into one tibble. In this example, I'll get the total population and median income for each of the nine counties in the San Francisco Bay Area for 2012 and 2017.
+
+```{r multi-year, message = FALSE}
+library(tidyverse)
+library(tidycensus)
+library(sf)
+library(ggsflabel)
+library(scales)
+
+# define years using purrr::lst to automatically creates a named list
+# which will help later when we combine the results in a single tibble
+years <- lst(2012, 2017) 
+
+# which counties?
+my_counties <- c(
+  "Alameda",
+  "Contra Costa",
+  "Marin",
+  "Napa",
+  "San Francisco",
+  "San Mateo",
+  "Santa Clara",
+  "Solano",
+  "Sonoma"
+  )
+
+# which census variables?
+my_vars <- c(
+  total_pop = "B01003_001",
+  median_income = "B19013_001"
+  )
+
+# loop over list of years and get 1 year acs estimates
+bay_area_multi_year <- map_dfr(
+  years,
+  ~ get_acs(
+      geography = "county",
+      variables = my_vars,
+      state = "CA",
+      county = my_counties,
+      year = .x,
+      survey = "acs1",
+      geometry = FALSE
+      ),
+  .id = "year"  # when combining results, add id var (name of list item)
+  ) %>%
+  select(-moe) %>%  # shhhh
+  arrange(variable, NAME) %>% 
+  print()
+```
+
+To compare years, I'll reshape the data and then calculate absolute change and percent change from 2012 to 2017. I'll also adjust the 2012 median income estimate for inflation.
+
+```{r}
+# reshape and calculate percent change in income
+bay_area_12_17 <- bay_area_multi_year %>% 
+  spread(year, estimate, sep = "_") %>% 
+  mutate(
+    year_2012 = if_else(
+      variable == "median_income",
+      round(year_2012 * 1.068449, 0),  # multiply 2012 by cpi inflation factor
+      year_2012
+      ),
+    change = year_2017 - year_2012,
+    pct_change = change / year_2012 * 100
+    )
+
+# which counties had the largest percent increase in median income?
+bay_area_12_17 %>% 
+  filter(variable == "median_income") %>% 
+  arrange(desc(pct_change))
+```
+
+From that table, we see that of the nine counties in the Bay Area, San Francisco County had the largest percent increase in median income between 2012 and 2017. The median income in 2012 was `r paste0("$", prettyNum(filter(bay_area_12_17, variable == "median_income" & str_detect(NAME, "Fran")) %>% pull(year_2012), big.mark = ","))` and it increased to `r paste0("$", prettyNum(filter(bay_area_12_17, variable == "median_income" & str_detect(NAME, "Fran")) %>% pull(year_2017), big.mark = ","))` in 2017, a percent change of `r paste0(prettyNum(filter(bay_area_12_17, variable == "median_income" & str_detect(NAME, "Fran")) %>% pull(pct_change), digits = 3), "%")`.
+
+That table is all well and good, but what if we want to make a map of the data? One of the great things about `tidycensus` is that it enables you to easily download geometry along with Census estimates. 
+
+As I noted in [my previous post on this topic]("/blog/tidycensus-mult/") , when working with `sf` objects, it is not possible to use `purrr::map_df()` or `dplyr::bind_rows()`. Instead, I will use `map()` to return a list of `sf` objects from `get_acs()` for each year and then combine them with `purrr::reduce()` and `rbind()`. One additional wrinkle is to add the year as a new variable to each object in the list before combining.
+
+```{r}
+# loop over year list and get acs estimates with sf geometry
+bay_area_multi_year_list <- map(
+  years,
+  ~ get_acs(
+      geography = "county",
+      variables = my_vars,
+      state = "CA",
+      county = my_counties,
+      year = .x,
+      survey = "acs1",
+      geometry = TRUE,
+      cb = TRUE
+      ),
+  ) %>%
+  map2(years, ~ mutate(.x, year = .y))  # add year as id variable
+
+# reshape and calculate percent change in income
+bay_area_geo <- reduce(bay_area_multi_year_list, rbind) %>% 
+  select(-moe) %>% 
+  spread(year, estimate, sep = "_") %>% 
+  fill(year_2012) %>%
+  mutate(
+    year_2012 = if_else(
+      variable == "median_income",
+      round(year_2012 * 1.068449, 0),  # multiply 2012 by cpi inflation factor
+      year_2012
+      ),
+    change = year_2017 - year_2012,
+    pct_change = change / year_2012
+    ) %>% 
+  filter(!is.na(year_2017)) %>% 
+  print()
+```
+
+So now I've got the same data as above with the addition of polygons representing the counties. This makes in a breeze to plot with a variety of mapping packages, including `ggplot2`. Here, I'll make a choropleth map of the change in median income from 2012 to 2017 by county.
+
+```{r map, message = FALSE}
+# make that map
+bay_area_geo %>%
+  filter(variable == "median_income") %>% 
+  separate(NAME, into = c("name", NA), sep = " County") %>%  # remove
+  ggplot() +
+  geom_sf(aes(fill = pct_change)) +
+  coord_sf(crs = st_crs(bay_area_geo), datum = NA) + 
+  geom_sf_label_repel(
+    aes(label = name),
+    fill = "gray95",
+    size = 2.5,
+    alpha = 0.9
+    ) +
+  scale_fill_viridis_c("", labels = percent_format(5)) +
+  labs(
+    title = "Where has median income increased the most?",
+    subtitle = "San Francisco Bay Area, 2012 - 2017"
+    ) +
+  theme_void()
+```
+

@@ -47,6 +47,7 @@ posts_navigation = true
 # githubRepo = "githubUsername/repositoryName"
 small_banner_logo = false
 noreadingtime = true
+rssLimit = 10
 
 [params.colors]
 # identifier = "#527fc1f"

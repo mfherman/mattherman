@@ -592,6 +592,11 @@ div.main .content .markdown figure {
   background: #fff;
   margin-bottom: 1em;
 }
+div.main .content .markdown .special-img-class {
+  max-width: 152px;
+  width: 152px;
+  margin-left: 10px;
+}
 div.main .content .markdown figure img {
   width: 100%;
   height: auto;

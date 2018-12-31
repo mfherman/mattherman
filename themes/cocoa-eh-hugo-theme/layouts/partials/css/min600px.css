@@ -149,3 +149,8 @@ flex-direction: row;
 div.main .content .navigation div {
 margin-top: 0em;
 }
+div.main .content .markdown .special-img-class {
+max-width: 152px;
+width: 152px;
+margin-left: 15px;
+}

@@ -1,0 +1,144 @@
+---
+title: Making Custom Census Estimates using Public Use Microdata Sample data and srvyr
+author:
+date: "2018-11-06"
+slug: pums
+draft: true
+tags:
+  - rstats
+  - census
+  - srvyr
+---
+
+
+
+<pre class="r"><code>library(tidyverse)
+library(janitor)
+
+nj_pums &lt;- read_csv(
+  #file = &quot;https://mattherman.info/csv/nj_pums.csv&quot;,
+  file = &quot;/Users/matthewherman/Downloads/nj_pums.csv&quot;,
+  col_types = cols(.default = &quot;c&quot;)) %&gt;%
+  select(
+    PUMA,
+    AGEP,    # age
+    SEX,     # sex
+    RAC1P,   # race
+    HISP,    # detailed hispanic origin
+    POVPIP,  # income to poverty ratio
+    WAGP,    # wage or salary income past 12 months
+    WKHP,    # hours worked per week
+    JWMNP,   # travel time to work in minutes
+    JWTR,    # means of transportation to work
+    PWGTP,   # survery weight
+    PWGTP1:PWGTP80  # survey replicate weight
+  ) %&gt;% 
+  clean_names()  # make all var names lowercase</code></pre>
+<pre class="r"><code>nj_pums_processed &lt;- nj_pums %&gt;% 
+  mutate_at(vars(-puma), as.integer) %&gt;%  # convert to integer variables
+  filter(!is.na(jwmnp) &amp; wkhp &gt;= 30 &amp; wagp &gt; 10000) %&gt;% # remove non workers and those who work at home
+  mutate(
+    sex = if_else(sex == 1, &quot;male&quot;, &quot;female&quot;),
+    
+    race = case_when(
+      rac1p == 1 &amp; hisp == 1      ~ &quot;white&quot;,
+      rac1p == 2 &amp; hisp == 1      ~ &quot;black&quot;,
+      rac1p %in% 6:7 &amp; hisp == 1  ~ &quot;asian&quot;,
+      rac1p %in% 3:5 &amp; hisp == 1  ~ &quot;native&quot;,
+      rac1p %in% 8:9 &amp; hisp == 1  ~ &quot;two_other&quot;,
+      hisp != 1                   ~ &quot;latino&quot;,
+    ),
+    
+    commute_method = case_when(
+      jwtr %in% c(1, 7, 8) ~ &quot;car&quot;,  # combining car, taxi motorcycle
+      jwtr == 2            ~ &quot;bus&quot;,
+      jwtr %in% 3:4        ~ &quot;subway&quot;,
+      jwtr == 5            ~ &quot;train&quot;,
+      jwtr == 6            ~ &quot;ferry&quot;,
+      jwtr == 9            ~ &quot;bicycle&quot;,
+      jwtr == 10           ~ &quot;walk&quot;,
+      jwtr == 12           ~ &quot;other&quot;
+    ),
+    
+    commute_public = if_else(
+      commute_method %in% c(&quot;bus&quot;, &quot;subway&quot;, &quot;train&quot;, &quot;ferry&quot;),
+      1L, 0L
+      ),
+    
+    wage_log = log10(wagp)
+  ) %&gt;% 
+  rename(
+    age = agep,
+    wage = wagp,
+    work_hours = wkhp,
+    work_travel_time = jwmnp
+    ) %&gt;% 
+  select(-(rac1p:hisp), -jwtr)</code></pre>
+<pre class="r"><code>nj_pums_processed %&gt;% 
+  filter(work_travel_time &lt;= 120 &amp; commute_method != &quot;other&quot;) %&gt;%  
+  mutate(
+    commute_method = fct_reorder(str_to_title(commute_method), work_travel_time),
+  ) %&gt;%   
+  select(work_travel_time, commute_method, pwgtp) %&gt;% 
+  uncount(weights = pwgtp) %&gt;% 
+  ggplot(
+    aes(
+      x = work_travel_time,
+      y = commute_method,
+      fill = ..x..
+      )
+    ) +
+  stat_density_ridges(
+    bandwidth = 6,
+    geom = &quot;density_ridges_gradient&quot;,
+    gradient_lwd = 1.5
+    ) +
+  scale_fill_viridis(
+    name = &quot;Travel Time\n(minutes)&quot;,
+    option = &quot;C&quot;,
+    breaks = seq(0, 120, 30)
+    ) +
+  scale_x_continuous(expand = c(0.01, 0), breaks = seq(0, 120, 30)) +
+  scale_y_discrete(expand = c(0.01, 0)) +
+  labs(
+    x = &quot;Daily travel time to work (minutes)&quot;,
+    y = &quot;&quot;,
+    title = &quot;How long do New Jerseyans spend commuting each day?&quot;,
+    caption = &quot;Source: 2017 American Community Survey PUMS&quot;
+  ) +
+  theme_ridges(center_axis_labels = FALSE) +
+  theme(
+    legend.key.height = unit(15, &quot;mm&quot;),
+    legend.key.width = unit(8, &quot;mm&quot;),
+    plot.caption = element_text(size = 8, face = &quot;italic&quot;)
+    )</code></pre>
+<p><img src="/blog/2018-11-06-pums_files/figure-html/commute%20time%20ridge%20plot-1.png" width="1260" /></p>
+<pre class="r"><code>nj_pums_processed %&gt;% 
+  mutate(work_travel_cat = cut(work_travel_time, breaks = (c(seq(0, 200, 15), Inf)))) %&gt;% 
+  select(work_travel_cat, wage, pwgtp) %&gt;% 
+  uncount(weights = pwgtp) %&gt;% 
+  ggplot(aes(x = work_travel_cat, y = wage)) +
+  geom_boxplot() +
+  scale_y_log10(labels = scales::dollar)</code></pre>
+<p><img src="/blog/2018-11-06-pums_files/figure-html/unnamed-chunk-1-1.png" width="1260" /></p>
+<p>ggplot(iris, aes(x = Sepal.Length, y = Species)) + geom_density_ridges()</p>
+<p>nj_pums_processed %&gt;%
+count(commute_public, wt = pwgtp)</p>
+<p>nj_pums_processed %&gt;%
+count(commute_means, wt = pwgtp, sort = TRUE)</p>
+<p>nj_pums_processed %&gt;%
+summarise_at(
+vars(wage),
+funs(mean, sd, median, max, min)
+)</p>
+<p>nj_pums_processed %&gt;%
+summarise_at(
+vars(work_travel_time),
+funs(mean, sd, median, max, min)
+)</p>
+<p>hi %&gt;%
+filter(wage &gt; 1000) %&gt;%
+ggplot(aes(x = work_travel_cat, y = wage)) +</p>
+<p>hi&lt;- nj_pums_processed %&gt;%</p>
+<p>nj_pums_processed</p>
+<p>```</p>

@@ -173,7 +173,7 @@ There are a few packages you can use to create interactive Leaflet maps directly
 
 First, I'll define a couple of helper function to format percentages and margins on my map. Next I'll use `tmap` to define the features, fill colors, basemap, and popups of my choropleth map of 2016 presidential election results.
 
-Then I'll add orange borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and green borders to those that <span style="background-color:lightgreen">leaned Republican</span>.[^legend] Finally, I'll add a couple of bonus leaflet features: full-screen control and a search box that identifies EDs.
+Then I'll add orange borders to the EDs that were close but <span style="background-color:orange">leaned Democratic</span> and green borders to those that <span style="background-color:lightgreen">leaned Republican</span>.[^legend] Finally, I'll add a cool bonus leaflet feature, a search box that identifies EDs.
 
 [^leaflet]: In fact, in the map I'm going to make, I will convert my `tmap` object to a `leaflet` object and then add some extra leaflet features via the [`leaflet.extras`](https://bhaskarvk.github.io/leaflet.extras/) package.
 
@@ -242,8 +242,7 @@ my_pretty_map <- tmap_leaflet(my_map) %>% # convert tmap obj to leaflet obj
       position = "topright",
       textPlaceholder = "Search EDs..."
       )
-    ) %>%
-  addFullscreenControl(pseudoFullscreen = TRUE)
+    )
 
 my_pretty_map
 ```

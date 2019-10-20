@@ -25,7 +25,7 @@ library(scales)
 
 No one loves a ggplot facet more than me, so recently when I was making a bar chart at work comparing the performance of different offices, I thought I would throw in a `facet_wrap()` to separate the offices by region. This would help to visually compare the performance between offices within each region, as well as showing system-wide performance. But what I soon realized is that my regions had different numbers of offices and so the widths of the bars were different across facets. Ugly! And also misleading because the width of the bars didn't have any real meaning.
 
-Enter, `space = "free"`.
+**Enter, `space = "free"`.**
 
 Since I can't use work data, I'll answer a fun question: which country in the Americas consumes the most alcohol per capita? I have 22 countries in three regions (North, Central, and South America). There are three countries in North America, seven counties in Central America, and 12 counties in South America (where this data is available).
 
@@ -134,7 +134,7 @@ alcohol_per_cap %>%
     )
 ```
 
-To be honest, I think this plot would actually be better without facets so you can more easily compare see the overall ranking of countries. But, this was just a fun of how to use `space = "free"`, right?
+To be honest, I think this plot would actually be better without facets so you can more easily compare the overall ranking of countries. But, this was just a fun of how to use `space = "free"`, right?
 
 ```{r, fig.asp=1, echo=FALSE}
 alcohol_per_cap %>% 

@@ -12,7 +12,7 @@ tags:
 
 
 <p>No one loves a ggplot facet more than me, so recently when I was making a bar chart at work comparing the performance of different offices, I thought I would throw in a <code>facet_wrap()</code> to separate the offices by region. This would help to visually compare the performance between offices within each region, as well as showing system-wide performance. But what I soon realized is that my regions had different numbers of offices and so the widths of the bars were different across facets. Ugly! And also misleading because the width of the bars didn’t have any real meaning.</p>
-<p>Enter, <code>space = &quot;free&quot;</code>.</p>
+<p><strong>Enter, <code>space = &quot;free&quot;</code>.</strong></p>
 <p>Since I can’t use work data, I’ll answer a fun question: which country in the Americas consumes the most alcohol per capita? I have 22 countries in three regions (North, Central, and South America). There are three countries in North America, seven counties in Central America, and 12 counties in South America (where this data is available).</p>
 <p>First, I’ll use <a href="https://github.com/GIST-ORNL/wbstats">{wbsats}</a> to download alcohol consumption data from the World Bank API. The indicator is named <code>SH.ALC.PCAP.LI</code>, and I’ll grab it for the most recent year available.</p>
 <pre class="r"><code>library(tidyverse)
@@ -113,6 +113,6 @@ head(alcohol_per_cap)
     panel.grid.major.y = element_blank(),
     )</code></pre>
 <p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-4-1.png" width="1260" /></p>
-<p>To be honest, I think this plot would actually be better without facets so you can more easily compare see the overall ranking of countries. But, this was just a fun of how to use <code>space = &quot;free&quot;</code>, right?</p>
+<p>To be honest, I think this plot would actually be better without facets so you can more easily compare the overall ranking of countries. But, this was just a fun of how to use <code>space = &quot;free&quot;</code>, right?</p>
 <p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-5-1.png" width="1260" /></p>
 <p>P.S. Spring Break 2020 in Montevideo?!?!</p>

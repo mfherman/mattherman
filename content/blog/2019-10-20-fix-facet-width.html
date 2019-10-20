@@ -1,0 +1,118 @@
+---
+title: 'space = "free" or how to fix your facet (width)'
+author:
+date: "2019-10-20"
+slug: fix-facet-width
+draft: false
+tags:
+  - rstats
+  - ggplot2
+---
+
+
+
+<p>No one loves a ggplot facet more than me, so recently when I was making a bar chart at work comparing the performance of different offices, I thought I would throw in a <code>facet_wrap()</code> to separate the offices by region. This would help to visually compare the performance between offices within each region, as well as showing system-wide performance. But what I soon realized is that my regions had different numbers of offices and so the widths of the bars were different across facets. Ugly! And also misleading because the width of the bars didn’t have any real meaning.</p>
+<p>Enter, <code>space = &quot;free&quot;</code>.</p>
+<p>Since I can’t use work data, I’ll answer a fun question: which country in the Americas consumes the most alcohol per capita? I have 22 countries in three regions (North, Central, and South America). There are three countries in North America, seven counties in Central America, and 12 counties in South America (where this data is available).</p>
+<p>First, I’ll use <a href="https://github.com/GIST-ORNL/wbstats">{wbsats}</a> to download alcohol consumption data from the World Bank API. The indicator is named <code>SH.ALC.PCAP.LI</code>, and I’ll grab it for the most recent year available.</p>
+<pre class="r"><code>library(tidyverse)
+library(wbstats)
+library(scales)
+
+# define regions in the americas
+americas &lt;- tribble(
+  ~iso3c, ~region,
+  &quot;CAN&quot;, &quot;North America&quot;,
+  &quot;USA&quot;, &quot;North America&quot;,
+  &quot;MEX&quot;, &quot;North America&quot;,
+  &quot;GTM&quot;, &quot;Central America&quot;,
+  &quot;BLZ&quot;, &quot;Central America&quot;,
+  &quot;SLV&quot;, &quot;Central America&quot;,
+  &quot;HND&quot;, &quot;Central America&quot;,
+  &quot;NIC&quot;, &quot;Central America&quot;,
+  &quot;CRI&quot;, &quot;Central America&quot;,
+  &quot;PAN&quot;, &quot;Central America&quot;,
+  &quot;COL&quot;, &quot;South America&quot;,
+  &quot;VEN&quot;, &quot;South America&quot;,
+  &quot;GUY&quot;, &quot;South America&quot;,
+  &quot;SUR&quot;, &quot;South America&quot;,
+  &quot;ECU&quot;, &quot;South America&quot;,
+  &quot;BRA&quot;, &quot;South America&quot;,
+  &quot;PER&quot;, &quot;South America&quot;,
+  &quot;BOL&quot;, &quot;South America&quot;,
+  &quot;PRY&quot;, &quot;South America&quot;,
+  &quot;URY&quot;, &quot;South America&quot;,
+  &quot;ARG&quot;, &quot;South America&quot;,
+  &quot;CHL&quot;, &quot;South America&quot;
+  )
+
+# get alcohol data from wold bank
+alcohol_per_cap &lt;- wb(
+  country = americas$iso3c,
+  indicator = &quot;SH.ALC.PCAP.LI&quot;,
+  mrv = 1
+  ) %&gt;% 
+  left_join(americas, by = &quot;iso3c&quot;) %&gt;%
+  select(country, value, region) %&gt;% 
+  arrange(desc(value)) %&gt;% 
+  as_tibble()
+
+head(alcohol_per_cap)
+## # A tibble: 6 x 3
+##   country       value region         
+##   &lt;chr&gt;         &lt;dbl&gt; &lt;chr&gt;          
+## 1 Uruguay        10.8 South America  
+## 2 Argentina       9.8 South America  
+## 3 United States   9.8 North America  
+## 4 Chile           9.3 South America  
+## 5 Canada          8.9 North America  
+## 6 Panama          7.9 Central America</code></pre>
+<p>Alright, the countries that drink the most are Uruguay, Argentina, and the United States!</p>
+<p>So let’s make a bar plot that shows each country’s alcohol consumption, faceted by region:</p>
+<pre class="r"><code>alcohol_per_cap %&gt;% 
+  ggplot(aes(x = country, y = value)) +
+  geom_col() +
+  facet_wrap(vars(region), scales = &quot;free_x&quot;)</code></pre>
+<p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-2-1.png" width="1260" /></p>
+<p>A few problems here: the order of the regions and countries are alphabetical; we can’t read the country axis labels; and the bars are different widths (the whole point of this post!).</p>
+<p>To make all the bars the same width, I’m going to switch from <code>facet_wrap()</code> to <code>facet_grid()</code> so I can use the <code>space</code> argument to allow the widths of the facets to vary based on the number of x values in each facet.</p>
+<pre class="r"><code>alcohol_per_cap %&gt;% 
+  ggplot(aes(x = country, y = value)) +
+  geom_col() +
+  facet_grid(cols = vars(region), scales = &quot;free_x&quot;, space = &quot;free_x&quot;)</code></pre>
+<p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-3-1.png" width="1260" /></p>
+<p>That’s better: the width of each region facet is now proportional to the number of countries in that region, making each country’s bar the same width.</p>
+<p>Now, there are clearly many other issues with this plot, so I’ll polish it up a bit for fun.</p>
+<pre class="r"><code>alcohol_per_cap %&gt;% 
+  mutate(
+    region = fct_relevel(region, &quot;North America&quot;, &quot;Central America&quot;),
+    country = fct_reorder(country, value)
+  ) %&gt;% 
+  ggplot(aes(x = country, y = value, fill = region)) +
+  geom_col(alpha = 0.8, width = 0.85) +
+  scale_fill_brewer(palette = &quot;Dark2&quot;) +
+  scale_y_continuous(expand = c(0, 0.1)) +
+  coord_flip() +
+  facet_grid(rows = vars(region), scales = &quot;free_y&quot;, switch = &quot;y&quot;, space = &quot;free_y&quot;) +
+  labs(
+    title = &quot;Which country in the Americas parties (drinks) the hardest?&quot;,
+    subtitle = &quot;Total alcohol consumed per capita, 2016&quot;,
+    caption = &quot;Source: World Health Organization\nGlobal Health Observatory Data Repository&quot;,
+    y = &quot;Annual alcohol consumption per capita (liters)&quot;
+  ) +
+  theme_minimal(base_family = &quot;Roboto Condensed&quot;) +
+  theme(
+    plot.margin = margin(0.5, 0.5, 0.5, 0.5, unit = &quot;cm&quot;),
+    plot.title = element_text(size = 15, face = &quot;bold&quot;),
+    strip.text.y = element_text(angle = 270, face = &quot;bold&quot;),
+    strip.placement = &quot;outside&quot;,
+    axis.title.x = element_text(margin = margin(t = 0.5, b = 0.5, unit = &quot;cm&quot;)),
+    axis.title.y = element_blank(),
+    axis.text = element_text(size = 10),
+    legend.position = &quot;none&quot;,
+    panel.grid.major.y = element_blank(),
+    )</code></pre>
+<p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-4-1.png" width="1260" /></p>
+<p>To be honest, I think this plot would actually be better without facets so you can more easily compare see the overall ranking of countries. But, this was just a fun of how to use <code>space = &quot;free&quot;</code>, right?</p>
+<p><img src="/blog/2019-10-20-fix-facet-width_files/figure-html/unnamed-chunk-5-1.png" width="1260" /></p>
+<p>P.S. Spring Break 2020 in Montevideo?!?!</p>

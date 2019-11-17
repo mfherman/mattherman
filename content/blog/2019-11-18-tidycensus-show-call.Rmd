@@ -1,0 +1,95 @@
+---
+title: "A new option to display Census API calls from tidycensus"
+author:
+date: "2019-11-18"
+slug: tidycensus-show-call
+draft: false
+tags:
+  - rstats
+  - tidycensus
+---
+
+```{r setup, include = FALSE}
+library(knitr)
+knitr::opts_chunk$set(
+  cache = TRUE, warning = FALSE, message = FALSE, collapse = TRUE,
+  echo = TRUE, dpi = 180, cache.lazy = FALSE, fig.retina = 2
+  )
+
+options(width = 77, dplyr.width = 77)
+library(tidycensus)
+library(magrittr)
+```
+
+I think the [tidycensus package](https://github.com/walkerke/tidycensus) is the easiest way to access U.S. Census data in R. Using familiar R syntax, you specify the variables and geography you want, and tidycensus pings the [Census API](https://www.census.gov/data/developers/data-sets.html) and returns the estimates in a tidy data frame, with the option of including geographic data for easy mapping.
+
+But it's easy to run into errors when using tidycensus and not be sure of the source of the problem. Sometimes the Census API is down. Sometimes estimates are not available at the geographic level you requested. Sometimes there is a bug in the tidycensus source code. Sometimes the Census changes the API end points or variable names for certain years and not others!
+
+So, that's why I submitted a [PR](https://github.com/walkerke/tidycensus/pull/203) to make it easier to diagnose the problem by having tidycensus print the Census API call it makes. Just add `show_call = TRUE` to `get_acs()`, `get_decennial()`, or `get_estimates()`. The PR has been merged into the master branch of the dev version of tidycensus, so to try this out, install from GitHub with with `remotes::install_github("walkerke/tidycensus/")`.
+
+```{r, message=TRUE}
+library(tidycensus)
+library(magrittr)  # for the pipe
+
+get_acs(
+  geography = "county",
+  state = "VT",
+  variables = "B01003_001",
+  show_call = TRUE
+  ) %>% 
+  head()
+```
+
+In second line of output, you see the call that tidycensus makes to the Census API (with your API key removed) to retrieve this data. You could copy this url into a web browser or check out the JSON response using httr.
+
+```{r}
+httr::GET("https://api.census.gov/data/2017/acs/acs5?get=B01003_001E%2CB01003_001M%2CNAME&for=county%3A%2A&in=state%3A50")
+```
+
+This isn't immensely useful for a call that's returned correctly, but how about when you get an error that is hard to interpret? Here, for example, is code from a [tidycensus issue that was opened on GitHub](https://github.com/walkerke/tidycensus/issues/191) that returns a confusing error message.
+
+```{r, message=TRUE, error=TRUE}
+get_decennial(
+  geography = "tract",
+  variables = "H0050001",
+  state = "WA",
+  county = "Spokane",
+  year = 2010
+  )
+```
+
+If you run this same code, but include `show_call = TRUE`, you get the API call leads to the error.
+
+```{r, message=TRUE, error=TRUE}
+get_decennial(
+  geography = "tract",
+  variables = "H0050001",
+  state = "WA",
+  county = "Spokane",
+  year = 2010,
+  show_call = TRUE
+  )
+```
+
+Next, check out this url in your browser (or httr if you don't want to leave R).
+
+```{r}
+httr::GET("https://api.census.gov/data/2010/dec/sf1?get=H0050001%2CNAME&for=tract%3A%2A&in=state%3A53%2Bcounty%3A063") %>% 
+  httr::content()
+```
+
+Aha! We asked for a variable (`H0050001`) the API can't find. And, as Kyle notes in his [response to the issue](https://github.com/walkerke/tidycensus/issues/191#issuecomment-532389339), some of the variable names in the API have changed, so the correct variable is now `H005001`.
+
+```{r, message=TRUE, error=TRUE}
+get_decennial(
+  geography = "tract",
+  variables = "H005001",
+  state = "WA",
+  county = "Spokane",
+  year = 2010,
+  show_call = TRUE
+  ) %>% 
+  head()
+```
+
+I hope this small feature is useful for debugging tidycensus error messages and helping users to better understand the Census API.

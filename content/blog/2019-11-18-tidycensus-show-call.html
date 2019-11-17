@@ -1,0 +1,105 @@
+---
+title: "A new option to display Census API calls from tidycensus"
+author:
+date: "2019-11-18"
+slug: tidycensus-show-call
+draft: false
+tags:
+  - rstats
+  - tidycensus
+---
+
+
+
+<p>I think the <a href="https://github.com/walkerke/tidycensus">tidycensus package</a> is the easiest way to access U.S. Census data in R. Using familiar R syntax, you specify the variables and geography you want, and tidycensus pings the <a href="https://www.census.gov/data/developers/data-sets.html">Census API</a> and returns the estimates in a tidy data frame, with the option of including geographic data for easy mapping.</p>
+<p>But it’s easy to run into errors when using tidycensus and not be sure of the source of the problem. Sometimes the Census API is down. Sometimes estimates are not available at the geographic level you requested. Sometimes there is a bug in the tidycensus source code. Sometimes the Census changes the API end points or variable names for certain years and not others!</p>
+<p>So, that’s why I submitted a <a href="https://github.com/walkerke/tidycensus/pull/203">PR</a> to make it easier to diagnose the problem by having tidycensus print the Census API call it makes. Just add <code>show_call = TRUE</code> to <code>get_acs()</code>, <code>get_decennial()</code>, or <code>get_estimates()</code>. The PR has been merged into the master branch of the dev version of tidycensus, so to try this out, install from GitHub with with <code>remotes::install_github(&quot;walkerke/tidycensus/&quot;)</code>.</p>
+<pre class="r"><code>library(tidycensus)
+library(magrittr)  # for the pipe
+
+get_acs(
+  geography = &quot;county&quot;,
+  state = &quot;VT&quot;,
+  variables = &quot;B01003_001&quot;,
+  show_call = TRUE
+  ) %&gt;% 
+  head()
+## Getting data from the 2013-2017 5-year ACS
+## Census API call: https://api.census.gov/data/2017/acs/acs5?get=B01003_001E%2CB01003_001M%2CNAME&amp;for=county%3A%2A&amp;in=state%3A50
+## # A tibble: 6 x 5
+##   GEOID NAME                       variable   estimate   moe
+##   &lt;chr&gt; &lt;chr&gt;                      &lt;chr&gt;         &lt;dbl&gt; &lt;dbl&gt;
+## 1 50001 Addison County, Vermont    B01003_001    36825    NA
+## 2 50003 Bennington County, Vermont B01003_001    36054    NA
+## 3 50005 Caledonia County, Vermont  B01003_001    30576    NA
+## 4 50007 Chittenden County, Vermont B01003_001   160985    NA
+## 5 50009 Essex County, Vermont      B01003_001     6203    NA
+## 6 50011 Franklin County, Vermont   B01003_001    48816    NA</code></pre>
+<p>In second line of output, you see the call that tidycensus makes to the Census API (with your API key removed) to retrieve this data. You could copy this url into a web browser or check out the JSON response using httr.</p>
+<pre class="r"><code>httr::GET(&quot;https://api.census.gov/data/2017/acs/acs5?get=B01003_001E%2CB01003_001M%2CNAME&amp;for=county%3A%2A&amp;in=state%3A50&quot;)
+## Response [https://api.census.gov/data/2017/acs/acs5?get=B01003_001E%2CB01003_001M%2CNAME&amp;for=county%3A%2A&amp;in=state%3A50]
+##   Date: 2019-11-17 02:06
+##   Status: 200
+##   Content-Type: application/json;charset=utf-8
+##   Size: 921 B
+## [[&quot;B01003_001E&quot;,&quot;B01003_001M&quot;,&quot;NAME&quot;,&quot;state&quot;,&quot;county&quot;],
+## [&quot;59676&quot;,&quot;-555555555&quot;,&quot;Rutland County, Vermont&quot;,&quot;50&quot;,&quot;021&quot;],
+## [&quot;26951&quot;,&quot;-555555555&quot;,&quot;Orleans County, Vermont&quot;,&quot;50&quot;,&quot;019&quot;],
+## [&quot;6950&quot;,&quot;-555555555&quot;,&quot;Grand Isle County, Vermont&quot;,&quot;50&quot;,&quot;013&quot;],
+## [&quot;28901&quot;,&quot;-555555555&quot;,&quot;Orange County, Vermont&quot;,&quot;50&quot;,&quot;017&quot;],
+## [&quot;160985&quot;,&quot;-555555555&quot;,&quot;Chittenden County, Vermont&quot;,&quot;50&quot;,&quot;007&quot;],
+## [&quot;25191&quot;,&quot;-555555555&quot;,&quot;Lamoille County, Vermont&quot;,&quot;50&quot;,&quot;015&quot;],
+## [&quot;55485&quot;,&quot;-555555555&quot;,&quot;Windsor County, Vermont&quot;,&quot;50&quot;,&quot;027&quot;],
+## [&quot;48816&quot;,&quot;-555555555&quot;,&quot;Franklin County, Vermont&quot;,&quot;50&quot;,&quot;011&quot;],
+## [&quot;30576&quot;,&quot;-555555555&quot;,&quot;Caledonia County, Vermont&quot;,&quot;50&quot;,&quot;005&quot;],
+## ...</code></pre>
+<p>This isn’t immensely useful for a call that’s returned correctly, but how about when you get an error that is hard to interpret? Here, for example, is code from a <a href="https://github.com/walkerke/tidycensus/issues/191">tidycensus issue that was opened on GitHub</a> that returns a confusing error message.</p>
+<pre class="r"><code>get_decennial(
+  geography = &quot;tract&quot;,
+  variables = &quot;H0050001&quot;,
+  state = &quot;WA&quot;,
+  county = &quot;Spokane&quot;,
+  year = 2010
+  )
+## Getting data from the 2010 decennial Census
+## Error : Your API call has errors.  The API message returned is &lt;html&gt;&lt;head&gt;&lt;title&gt;Error report&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;HTTP Status 404 - /data/2010/dec/sf3&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;.
+## Error in gather_(data, key_col = compat_as_lazy(enquo(key)), value_col = compat_as_lazy(enquo(value)), : unused argument (-NAME)</code></pre>
+<p>If you run this same code, but include <code>show_call = TRUE</code>, you get the API call leads to the error.</p>
+<pre class="r"><code>get_decennial(
+  geography = &quot;tract&quot;,
+  variables = &quot;H0050001&quot;,
+  state = &quot;WA&quot;,
+  county = &quot;Spokane&quot;,
+  year = 2010,
+  show_call = TRUE
+  )
+## Getting data from the 2010 decennial Census
+## Census API call: https://api.census.gov/data/2010/dec/sf1?get=H0050001%2CNAME&amp;for=tract%3A%2A&amp;in=state%3A53%2Bcounty%3A063
+## Error : Your API call has errors.  The API message returned is &lt;html&gt;&lt;head&gt;&lt;title&gt;Error report&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;HTTP Status 404 - /data/2010/dec/sf3&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;.
+## Error in gather_(data, key_col = compat_as_lazy(enquo(key)), value_col = compat_as_lazy(enquo(value)), : unused argument (-NAME)</code></pre>
+<p>Next, check out this url in your browser (or httr if you don’t want to leave R).</p>
+<pre class="r"><code>httr::GET(&quot;https://api.census.gov/data/2010/dec/sf1?get=H0050001%2CNAME&amp;for=tract%3A%2A&amp;in=state%3A53%2Bcounty%3A063&quot;) %&gt;% 
+  httr::content()
+## [1] &quot;error: error: unknown variable &#39;H0050001&#39;&quot;</code></pre>
+<p>Aha! We asked for a variable (<code>H0050001</code>) the API can’t find. And, as Kyle notes in his <a href="https://github.com/walkerke/tidycensus/issues/191#issuecomment-532389339">response to the issue</a>, some of the variable names in the API have changed, so the correct variable is now <code>H005001</code>.</p>
+<pre class="r"><code>get_decennial(
+  geography = &quot;tract&quot;,
+  variables = &quot;H005001&quot;,
+  state = &quot;WA&quot;,
+  county = &quot;Spokane&quot;,
+  year = 2010,
+  show_call = TRUE
+  ) %&gt;% 
+  head()
+## Getting data from the 2010 decennial Census
+## Census API call: https://api.census.gov/data/2010/dec/sf1?get=H005001%2CNAME&amp;for=tract%3A%2A&amp;in=state%3A53%2Bcounty%3A063
+## # A tibble: 6 x 4
+##   GEOID       NAME                                       variable value
+##   &lt;chr&gt;       &lt;chr&gt;                                      &lt;chr&gt;    &lt;dbl&gt;
+## 1 53063000200 Census Tract 2, Spokane County, Washington H005001    177
+## 2 53063000300 Census Tract 3, Spokane County, Washington H005001    133
+## 3 53063000400 Census Tract 4, Spokane County, Washington H005001    112
+## 4 53063000500 Census Tract 5, Spokane County, Washington H005001     68
+## 5 53063000600 Census Tract 6, Spokane County, Washington H005001     55
+## 6 53063000700 Census Tract 7, Spokane County, Washington H005001     99</code></pre>
+<p>I hope this small feature is useful for debugging tidycensus error messages and helping users to better understand the Census API.</p>

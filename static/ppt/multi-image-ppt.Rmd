@@ -1,0 +1,96 @@
+---
+title: "Multi-image slide layouts in PowerPoint via R Markdown"
+author: "Matt Herman"
+output: 
+  powerpoint_presentation:
+    reference_doc: "template.pptx"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  dev = "png",
+  fig.width = 12,
+  fig.height = 7)
+```
+
+```{r}
+library(tidyverse)
+library(gapminder)
+library(glue)
+library(scales)
+library(gridExtra)
+library(patchwork)
+
+countries <- c("Malawi", "Zambia", "Tanzania", "Kenya", "Mozambique") 
+
+east_africa <- gapminder %>% 
+  filter(country %in% countries) %>%
+  mutate(country = fct_reorder2(country, year, lifeExp))
+
+bar <- east_africa %>% 
+  filter(year == max(year)) %>% 
+  ggplot(aes(x = country, y = lifeExp, fill = country)) +
+  geom_col(width = 0.75, alpha = 0.9) +
+  geom_text(
+    aes(label = number(lifeExp, 0.1)),
+    position = position_stack(vjust = 0.5),
+    color = "white",
+    fontface = "bold",
+    size = 5
+    ) +
+  scale_fill_brewer(palette = "Dark2") +
+  scale_y_continuous(expand = expand_scale(0.01, 0.05)) +
+  labs(y = "Life Expecancy (years)") +
+  theme_minimal(base_size = 16) + 
+  theme(
+    legend.position = "none",
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.title.y.left = element_text(margin = margin(r = 10)),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    )
+
+tab <- east_africa %>% 
+  filter(year == max(year)) %>% 
+  transmute(
+    Country = country, 
+    Population = comma(pop),
+    `GDP per capita` = dollar(gdpPercap, 1),
+    `Life Expectancy` = number(lifeExp, 0.1),
+    ) %>% 
+  arrange(Country) %>% 
+  tableGrob(theme = ttheme_minimal(), rows = NULL)
+
+line <- east_africa %>%
+  ggplot(aes(x = year, y = lifeExp, color = country)) +
+  geom_line(lwd = 1.25,
+            key_glyph = "timeseries") +  # for those cute glyphs in the legend
+  scale_color_brewer(palette = "Dark2") +
+  labs(y = "Life Expecancy (years)") +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.title.y.left = element_text(margin = margin(r = 10)),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 30)
+  )
+
+layout <- (bar + tab) / line
+
+layout +
+  plot_annotation(
+  title = "Life Expectancy of Selected Countries in East Africa",
+  caption = "Source: gapminder: Data from Gapminder
+             github.com/jennybc/gapminder
+             gapminder.org/data/",
+  theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = "bold"))
+  )
+```
+
+

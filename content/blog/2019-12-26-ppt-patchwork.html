@@ -1,0 +1,134 @@
+---
+title: "Use patchwork and R Markdown for multi-image slide layouts in PowerPoint"
+author:
+date: "2019-12-26"
+slug: ppt-patchwork
+draft: true
+tags:
+  - rstats
+  - patchwork
+  - rmarkdown
+---
+
+
+
+<p>Recently at <a href="https://www1.nyc.gov/site/acs/about/data-analysis.page">work</a>, I’ve been building R Markdown documents to generate PowerPoint slides. In general, this is a pretty straightforward process and is described in <a href="https://bookdown.org/yihui/rmarkdown/powerpoint-presentation.html"><em>R Markdown: The Definitive Guide</em></a>. One limitation they note is:</p>
+<blockquote>
+<p>Images and tables will always be placed on new slides. The only elements that can coexist with an image or table on a slide are the slide header and image/table caption. When you have a text paragraph and an image on the same slide, the image will be moved to a new slide automatically.</p>
+</blockquote>
+<p>That is a bummer for me because the original PowerPoint slides I am trying to replicate using R Markdown have multiple images and tables on them. An alternative to using PowerPoint would be <a href="https://slides.yihui.org/xaringan/#1">xaringan</a> and doing some fancy layout using CSS, but I’m not very good at CSS and we need the slides in PowerPoint format because other folks at the office add additional slides to the presentations I generate.</p>
+<p>Around this time, I was reading <a href="https://twitter.com/thomasp85/status/1195287007108456449">tweets</a> <a href="https://twitter.com/thomasp85/status/1197473023823171584">about</a> <a href="https://twitter.com/thomasp85/status/1199358523399954432">new</a> <a href="https://twitter.com/thomasp85/status/1201125936311275522">development on the patchwork package</a> for arranging ggplot objects, and thought that instead of including multiple images on one slide, I could just create a multi-image layout in R and then render that layout to the PowerPoint slide.</p>
+<p><strong>In this post, I show how to combine plots and tables using patchwork to create multi-image PowerPoint slides using R Markdown.</strong></p>
+<p>I’m going to use data from the <a href="https://github.com/jennybc/gapminder">gapminder package</a>, so if you don’t have it installed:</p>
+<pre class="r"><code>install.packages(&quot;gapminder&quot;)</code></pre>
+<p>On my slide, I want to include 2 plots and 1 table related to life expectancy of certain counties in East Africa. I’m going to start by making the plots and then I’ll combine them in a single layout, and finally render the image to PowerPoint.</p>
+<p>First, I load the needed packages and filter the gapminder data to the five countries in East Africa I’m going to be examining.</p>
+<pre class="r"><code>library(tidyverse)
+library(gapminder)
+library(scales)
+library(gridExtra)
+library(patchwork)
+
+my_countries &lt;- c(&quot;Zambia&quot;, &quot;Malawi&quot;, &quot;Mozambique&quot;, &quot;Tanzania&quot;, &quot;Kenya&quot;) 
+
+east_africa &lt;- gapminder %&gt;% 
+  filter(country %in% my_countries) %&gt;%
+  mutate(country = fct_reorder2(country, year, lifeExp)) # reorder for plotting</code></pre>
+<p>If you haven’t worked with the gapminder data before, take a peak. There is one row per country per year, with life expectancy, population, and GDP for each observation.</p>
+<pre class="r"><code>head(east_africa)
+## # A tibble: 6 x 6
+##   country continent  year lifeExp      pop gdpPercap
+##   &lt;fct&gt;   &lt;fct&gt;     &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;     &lt;dbl&gt;
+## 1 Kenya   Africa     1952    42.3  6464046      854.
+## 2 Kenya   Africa     1957    44.7  7454779      944.
+## 3 Kenya   Africa     1962    47.9  8678557      897.
+## 4 Kenya   Africa     1967    50.7 10191512     1057.
+## 5 Kenya   Africa     1972    53.6 12044785     1222.
+## 6 Kenya   Africa     1977    56.2 14500404     1268.</code></pre>
+<p>The first plot I’m going to make is a bar chart of life expectancy by country for the most recent year of data, 2007.</p>
+<pre class="r"><code>bar &lt;- east_africa %&gt;% 
+  filter(year == max(year)) %&gt;%  # most recent year only
+  ggplot(aes(x = country, y = lifeExp, fill = country)) +
+  geom_col(width = 0.75, alpha = 0.9) +
+  geom_text(
+    aes(label = number(lifeExp, 0.1)),
+    position = position_stack(vjust = 0.5),
+    color = &quot;white&quot;,
+    fontface = &quot;bold&quot;,
+    size = 5
+    ) +
+  scale_fill_brewer(palette = &quot;Dark2&quot;) +
+  scale_y_continuous(expand = expand_scale(0.01, 0.05)) +  # remove extra space between bars and x-axis labels
+  labs(y = &quot;Life Expectancy (years)&quot;) +
+  theme_minimal(base_size = 16) + 
+  theme(
+    legend.position = &quot;none&quot;,
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.title.y.left = element_text(margin = margin(r = 10)),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+    )
+
+bar</code></pre>
+<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-4-1.png" width="1260" /></p>
+<p>Next, a line chart to look at the trend in life expectancy by country over time.</p>
+<pre class="r"><code>line &lt;- east_africa %&gt;%
+  ggplot(aes(x = year, y = lifeExp, color = country)) +
+  geom_line(lwd = 1.25, key_glyph = &quot;timeseries&quot;) +  # for those cute glyphs in the legend
+  scale_color_brewer(palette = &quot;Dark2&quot;) +
+  labs(y = &quot;Life Expectancy (years)&quot;) +
+  theme_minimal(base_size = 16) +
+  theme(
+    legend.position = &quot;bottom&quot;,
+    legend.title = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 10),
+    axis.title.y.left = element_text(margin = margin(r = 10)),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(t = 30)
+  )
+
+line</code></pre>
+<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-5-1.png" width="1260" /></p>
+<p>Lastly, a table with life expectancy, population, and GDP for each country for the most recent year of data. To make a table that I can combine with the above ggplots, I’ll use <a href="https://cran.r-project.org/web/packages/gridExtra/vignettes/tableGrob.html"><code>gridExtra::tableGrob()</code></a>, which renders tables as grobs (<a href="https://www.stat.auckland.ac.nz/~paul/useR2015-grid/grid-slides.html">grid graphical objects</a>).</p>
+<pre class="r"><code>tab &lt;- east_africa %&gt;% 
+  filter(year == max(year)) %&gt;% 
+  transmute(
+    Country = country, 
+    Population = comma(pop),
+    `GDP per capita` = dollar(gdpPercap, 1),
+    `Life Expectancy` = number(lifeExp, 0.1),
+    ) %&gt;% 
+  arrange(Country) %&gt;% 
+  tableGrob(theme = ttheme_minimal(), rows = NULL)
+
+grid.arrange(tab)</code></pre>
+<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-6-1.png" width="1260" /></p>
+<p>Alright, I’ve got the three graphical elements I want to combine into one layout on a single slide. Now comes the magical <a href="https://patchwork.data-imaginist.com/">patchwork package</a> to assemble these elements into one graphic.</p>
+<p>I’m thinking this will look best with the bar chart and table side-by-side on the top half of the slide and the line chart below them. To do this, I take the elements created above and describe their arrangement using the fun <a href="https://patchwork.data-imaginist.com/articles/guides/layout.html">patchwork syntax</a>. Then, I’ll add a title and caption to finish off the layout.</p>
+<pre class="r"><code>layout &lt;- (bar + tab) / line
+
+layout +
+  plot_annotation(
+  title = &quot;Life Expectancy of Selected Countries in East Africa&quot;,
+  caption = &quot;Source: gapminder: Data from Gapminder
+             github.com/jennybc/gapminder
+             gapminder.org/data/&quot;,
+  theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = &quot;bold&quot;))
+  )</code></pre>
+<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-7-1.png" width="2160" /></p>
+<p>All that’s left to do is to get this onto a PowerPoint slide!</p>
+<p>First, create a new R Markdown document and specify <code>powerpoint_presentation</code> as the output format in the YAML header:</p>
+<pre class="yaml"><code>---
+title: &quot;Multi-image slide layouts in PowerPoint via R Markdown&quot;
+author: &quot;Matt Herman&quot;
+output:
+  powerpoint_presentation:
+    reference_doc: template.pptx
+---</code></pre>
+<p>If you want to use a PowerPoint template, you can <a href="https://bookdown.org/yihui/rmarkdown/powerpoint-presentation.html">specify a reference document</a> in the header. This can be useful if you need to match a corporate brand or theme.</p>
+<p>Then, in the body of the R Markdown file, create a code chunk with all the above code to create the plots and layouts. Finally, click the Knit button from RStudio or run <code>rmarkdown::render()</code> to generate the PowerPoint presentation. And here is a screenshot of resulting presentation:</p>
+<p>One thing that took a little trial and error was setting the <code>fig.width</code> and <code>fig.height</code> options of the knitr chunk as well as the dimensions of the content area in the PowerPoint template so that the patchwork layout fills the slides appropriately.</p>
+<p>This example demonstrated how to make a singe PowerPoint slide with multiple images using patchwork. But of course, one of the super powers of programmatically creating slides is that you can very easily create a second or third or fourth slide with other countries specified. One nice way to implement this would be to use a parameterized <a href="https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html">child document</a> and iterate through different sets of countries. (Next blog post, perhaps?)</p>
+<p>You can find the complete <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/multi-image-ppt.Rmd">R Markdown file</a>, the <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/template.pptx">PowerPoint template I used</a>, and the rendered <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/multi-image-ppt.pptx">PowerPoint</a> on GitHub.</p>

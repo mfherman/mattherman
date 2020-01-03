@@ -10,9 +10,11 @@ output:
 knitr::opts_chunk$set(
   echo = FALSE,
   message = FALSE,
-  dev = "png",
+  warning = FALSE,
+  dev = "svg",
   fig.width = 12,
-  fig.height = 7)
+  fig.height = 7
+  )
 ```
 
 ```{r}

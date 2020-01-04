@@ -1,7 +1,7 @@
 ---
 title: "Use patchwork and R Markdown for multi-image slide layouts in PowerPoint"
 author:
-date: "2019-12-26"
+date: "2020-01-03"
 slug: ppt-patchwork
 draft: true
 tags:
@@ -71,7 +71,7 @@ east_africa &lt;- gapminder %&gt;%
     )
 
 bar</code></pre>
-<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-4-1.png" width="1260" /></p>
+<p><img src="/blog/2020-01-03-ppt-patchwork_files/figure-html/unnamed-chunk-4-1.png" width="1260" /></p>
 <p>Next, a line chart to look at the trend in life expectancy by country over time.</p>
 <pre class="r"><code>line &lt;- east_africa %&gt;%
   ggplot(aes(x = year, y = lifeExp, color = country)) +
@@ -90,7 +90,7 @@ bar</code></pre>
   )
 
 line</code></pre>
-<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-5-1.png" width="1260" /></p>
+<p><img src="/blog/2020-01-03-ppt-patchwork_files/figure-html/unnamed-chunk-5-1.png" width="1260" /></p>
 <p>Lastly, a table with life expectancy, population, and GDP for each country for the most recent year of data. To make a table that I can combine with the above ggplots, I’ll use <a href="https://cran.r-project.org/web/packages/gridExtra/vignettes/tableGrob.html"><code>gridExtra::tableGrob()</code></a>, which renders tables as grobs (<a href="https://www.stat.auckland.ac.nz/~paul/useR2015-grid/grid-slides.html">grid graphical objects</a>).</p>
 <pre class="r"><code>tab &lt;- east_africa %&gt;% 
   filter(year == max(year)) %&gt;% 
@@ -104,7 +104,7 @@ line</code></pre>
   tableGrob(theme = ttheme_minimal(), rows = NULL)
 
 grid.arrange(tab)</code></pre>
-<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-6-1.png" width="1260" /></p>
+<p><img src="/blog/2020-01-03-ppt-patchwork_files/figure-html/unnamed-chunk-6-1.png" width="1260" /></p>
 <p>Alright, I’ve got the three graphical elements I want to combine into one layout on a single slide. Now comes the magical <a href="https://patchwork.data-imaginist.com/">patchwork package</a> to assemble these elements into one graphic.</p>
 <p>I’m thinking this will look best with the bar chart and table side-by-side on the top half of the slide and the line chart below them. To do this, I take the elements created above and describe their arrangement using the fun <a href="https://patchwork.data-imaginist.com/articles/guides/layout.html">patchwork syntax</a>. Then, I’ll add a title and caption to finish off the layout.</p>
 <pre class="r"><code>layout &lt;- (bar + tab) / line
@@ -117,7 +117,7 @@ layout +
              gapminder.org/data/&quot;,
   theme = theme(plot.title = element_text(size = 20, hjust = 0.5, face = &quot;bold&quot;))
   )</code></pre>
-<p><img src="/blog/2019-12-26-ppt-patchwork_files/figure-html/unnamed-chunk-7-1.png" width="2160" /></p>
+<p><img src="/blog/2020-01-03-ppt-patchwork_files/figure-html/unnamed-chunk-7-1.png" width="2160" /></p>
 <p>All that’s left to do is to get this onto a PowerPoint slide!</p>
 <p>First, create a new R Markdown document and specify <code>powerpoint_presentation</code> as the output format in the YAML header:</p>
 <pre class="yaml"><code>---

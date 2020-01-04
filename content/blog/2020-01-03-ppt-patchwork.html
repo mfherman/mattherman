@@ -3,7 +3,7 @@ title: "Use patchwork and R Markdown for multi-image slide layouts in PowerPoint
 author:
 date: "2020-01-03"
 slug: ppt-patchwork
-draft: true
+draft: false
 tags:
   - rstats
   - patchwork
@@ -129,6 +129,7 @@ output:
 ---</code></pre>
 <p>If you want to use a PowerPoint template, you can <a href="https://bookdown.org/yihui/rmarkdown/powerpoint-presentation.html">specify a reference document</a> in the header. This can be useful if you need to match a corporate brand or theme.</p>
 <p>Then, in the body of the R Markdown file, create a code chunk with all the above code to create the plots and layouts. Finally, click the Knit button from RStudio or run <code>rmarkdown::render()</code> to generate the PowerPoint presentation. And here is a screenshot of resulting presentation:</p>
+<p><img src="/img/patchwork-ppt.png" /></p>
 <p>One thing that took a little trial and error was setting the <code>fig.width</code> and <code>fig.height</code> options of the knitr chunk as well as the dimensions of the content area in the PowerPoint template so that the patchwork layout fills the slides appropriately.</p>
 <p>This example demonstrated how to make a singe PowerPoint slide with multiple images using patchwork. But of course, one of the super powers of programmatically creating slides is that you can very easily create a second or third or fourth slide with other countries specified. One nice way to implement this would be to use a parameterized <a href="https://bookdown.org/yihui/rmarkdown-cookbook/child-document.html">child document</a> and iterate through different sets of countries. (Next blog post, perhaps?)</p>
 <p>You can find the complete <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/multi-image-ppt.Rmd">R Markdown file</a>, the <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/template.pptx">PowerPoint template I used</a>, and the rendered <a href="https://github.com/mfherman/mattherman/blob/master/static/ppt/multi-image-ppt.pptx">PowerPoint</a> on GitHub.</p>

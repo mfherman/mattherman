@@ -20,21 +20,30 @@
   <script src="{{ .Site.BaseURL }}js/progressively.min.js" defer></script>
 {{ end }}
 
-
-{{ if .Site.Params.issoHost }}
-<script
-  data-isso="//{{ .Site.Params.issoHost }}/"
-  data-isso-css="true"
-  data-isso-lang="{{ .Site.LanguageCode }}"
-  src="//{{ .Site.Params.issoHost }}/js/embed.min.js"
-></script>
-{{ end }}
-
 {{ if .Site.Params.share }}
   <script src="{{ .Site.BaseURL }}js/social-share-kit.min.js" defer></script>
 {{ end }}
 
+{{ if .Site.Params.fathomurl }}
+<!-- Fathom - simple website analytics - https://github.com/usefathom/fathom -->
+<script>
+(function(f, a, t, h, o, m){
+	a[h]=a[h]||function(){
+		(a[h].q=a[h].q||[]).push(arguments)
+	};
+	o=f.createElement('script'),
+	m=f.getElementsByTagName('script')[0];
+	o.async=1; o.src=t; o.id='fathom-script';
+	m.parentNode.insertBefore(o,m)
+})(document, window, '//{{ .Site.Params.fathomurl }}/tracker.js', 'fathom');
+fathom('trackPageview');
+</script>
+<!-- / Fathom -->
+{{ end }}
+
+{{ if .Site.Params.googleAnalyticsEnabled }}
 {{ template "_internal/google_analytics_async.html" . }}
+{{ end }}
 
 <script>
   window.onload = function() {
@@ -61,7 +70,3 @@
 </script>
 <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_CHTML"></script>
 {{ end }}
-<script src="//yihui.name/js/math-code.js"></script>
-<script async
-src="//cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>

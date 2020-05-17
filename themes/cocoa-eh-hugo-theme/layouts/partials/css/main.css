@@ -157,7 +157,11 @@ div.header .content {
   align-items: center;
 }
 div.header .container .logo {
+  {{ if .Site.Params.enlarged }}
+  max-width: 200px;
+  {{ else }}
   max-width: 100px;
+  {{ end }}
   margin-left: -2em;
 }
 div.header .name {
@@ -165,12 +169,19 @@ div.header .name {
   font-size: 28px;
   font-family: 'Nexa Bold', 'Helvetica Neue', 'Arial', sans-serif;
   letter-spacing: -0.005rem;
+  {{ if isset .Site.Params "titlestyle" }}
+      {{ if in "capitalize uppercase lowercase none full-width" .Site.Params.titlestyle }}
+  text-transform: {{ .Site.Params.titlestyle }};
+      {{ else }}
+      {{ errorf "This titlestyle is not a valid text-transform css parameter: %s" .Site.Params.titlestyle }}
+      {{ end }}
+  {{ else }}
   text-transform: uppercase;
+  {{ end }}
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   font-smoothing: antialiased;
   color: #333333;
-  color: #555555;
 }
 div.header nav {
   margin-bottom: 16px;
@@ -278,14 +289,17 @@ div.main .content .title-container {
   justify-content: space-between;
 }
 div.main .content .posts {
+  {{ $nbPosts := len (where .Data.Pages "Params.best" true)  }}
+  {{ if gt $nbPosts 0 }}
   margin-bottom: 4em;
+  {{ end }}
 }
 div.main .content .page-heading {
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
   font-family: 'Helvetica Neue', 'Arial', sans-serif;
   letter-spacing: -0.005rem;
-  text-transform: uppercase;
+  -text-transform: uppercase;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
   font-smoothing: antialiased;
@@ -345,6 +359,26 @@ div.main .content .front-matter .tags ul li:hover {
 div.main .content .front-matter .tags ul li a {
   color: #666666;
 }
+{{ if .Site.Params.tagicons }}
+div.main .content .front-matter .tags.tag-icons .middot {
+  margin-left: 8px;
+}
+div.main .content .front-matter .tags.tag-icons .middot a {
+  display: inline-block;
+  padding: 0 5px;
+  background: #eee;
+  border-radius: 0 5px 5px 0;
+  position: relative;
+}
+div.main .content .front-matter .tags.tag-icons .middot a:after {
+  content: " ";
+  position: absolute;
+  right: 100%;
+  border-top: 11.2px solid transparent;
+  border-right: 11.2px solid #eee;
+  border-bottom: 11.2px solid transparent;
+}
+{{ end }}
 div.main .container.f04 {
   -webkit-justify-content: center;
   -moz-justify-content: center;
@@ -592,11 +626,6 @@ div.main .content .markdown figure {
   background: #fff;
   margin-bottom: 1em;
 }
-div.main .content .markdown .special-img-class {
-  max-width: 152px;
-  width: 152px;
-  margin-left: 10px;
-}
 div.main .content .markdown figure img {
   width: 100%;
   height: auto;
@@ -606,15 +635,28 @@ div.main .content .markdown figure img {
   margin: auto;
 }
 div.main .content .markdown table {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   width: 100%;
-  border: 1px solid #e5e5e5;
+  -border: 1px solid #e5e5e5;
   border-collapse: collapse;
+  font-size: 0.9em;
+  font-family: sans-serif;
+}
+.dataTables_info {
+  font-size: 0.8em;
+  font-family: sans-serif;
+}
+.dataTables_paginate {
+  font-size: 0.7em;
+  font-family: sans-serif;
+}
+.dt-buttons {
+  font-size: 0.9em;
 }
 div.main .content .markdown td,
 div.main .content .markdown th {
   padding: .25rem .5rem;
-  border: 1px solid #e5e5e5;
+  -border: 1px solid #e5e5e5;
 }
 div.main .content .markdown tbody tr:nth-child(odd) td,
 div.main .content .markdown tbody tr:nth-child(odd) th {
@@ -715,13 +757,6 @@ kbd {
   line-height: 1.4;
   white-space: nowrap;
 }
-
-pre code {
-  overflow: auto;
-  word-wrap: normal;
-  white-space: pre;
-}
-
 
 /* Fonts */
 

@@ -38,7 +38,7 @@ latestpostcount = 3
 github = "mfherman"
 email = "mfherman@gmail.com"
 linkedin = "matt-herman-research"
-# twitter = "example"
+twitter = "buddyherms"
 # facebook = "facebook_id"
 social_banner = "img/mh.png"
 usesmallsummarycard = true
@@ -47,7 +47,7 @@ posts_navigation = true
 # githubRepo = "githubUsername/repositoryName"
 small_banner_logo = false
 noreadingtime = true
-rssLimit = 10
+# rssLimit = 10
 
 [params.colors]
 # identifier = "#527fc1f"

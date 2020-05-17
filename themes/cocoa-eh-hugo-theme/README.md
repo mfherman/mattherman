@@ -4,7 +4,7 @@
 
 **Cocoa Enhanced** is a clean, fast, and responsive [Hugo](http://gohugo.io) [theme](https://github.com/spf13/hugoThemes/) with cool typography. The main goal of this theme is to be simple and fast but also highly customizable.
 
-A demo is available [here](https://kodewolf.com).
+A demo is available [here](https://themes.gohugo.io/theme/cocoa-eh-hugo-theme/).
 
 > This is a fork from the original [Cocoa](https://www.github.com/nishanths/cocoa-hugo-theme) theme, with some improvements.
 
@@ -26,7 +26,7 @@ A demo is available [here](https://kodewolf.com).
 * Progressive images.
 * Twitter cards support.
 * Disqus and Isso support.
-* LaTeX support with MathJax.
+* LaTeX support with MathJax ([use `.mmark`](https://github.com/mtn/cocoa-eh-hugo-theme/issues/92)).
 
 #### Typography
 
@@ -70,18 +70,6 @@ hugo -t cocoa-eh
 ````
 
 If you want a simple blog you can just use the `exampleSite`. The [wiki](https://github.com/mtn/cocoa-eh-hugo-theme/wiki) includes helpful details should you need more.
-
-## Contributing
-
-Pull requests, bug fixes, and new features are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create new Pull Request on GitHub
-
-Please keep each pull request to a single feature -- it's okay to submit multiple pull requests at a time! This makes new features easier to review and merge. For large changes, consider making an issue beforehand to discuss.
 
 ## License
 

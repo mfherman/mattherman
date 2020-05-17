@@ -41,21 +41,13 @@
 {{ end }}
 
 {{ range .Site.Params.extracssfiles }}
-  <link rel="stylesheet" href="{{ . | absURL }}">
-{{ end }}
-
-{{ if .Site.Params.issoHost }}
-  <style type="text/css" media="screen">
-    .isso section {
-      margin: 0px;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ . | relURL }}">
 {{ end }}
 
 <!-- Icon -->
 <link rel="shortcut icon"
 {{ if .Site.Params.faviconfile }}
-    href="{{ .Site.Params.faviconfile | absURL }}"
+    href="{{ .Site.Params.faviconfile | relURL }}"
 {{ else }}
     href="{{ .Site.BaseURL }}img/favicon.ico"
 {{ end }}

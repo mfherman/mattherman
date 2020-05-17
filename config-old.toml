@@ -1,0 +1,63 @@
+baseurl = "https://mattherman.info/"
+theme = "cocoa-eh-hugo-theme"
+builddrafts = false
+canonifyurls = true
+enableEmoji = true
+contentdir = "content"
+languageCode = "en-US"
+layoutdir = "layouts"
+publishdir = "public"
+author = "Matt Herman"
+title = "Matt Herman"
+disqusshortname = "mattherman"
+pluralizelisttitles = false
+googleAnalytics = "UA-112317483-1"
+math = true
+uselatex = true
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
+
+[permalinks]
+blog = "blog/:slug/"
+
+[params]
+dateform = "Jan 2 2006"
+dateformfull = "Mon Jan 2, 2006 15:04:05 MST"
+description = "Matt Herman's Blog"
+# copyright = "Copyright © 2018 Matt Herman"
+# copyrightUrl = "https://creativecommons.org/licenses/by-sa/4.0/"
+logofile = "img/mh.png"
+faviconfile = "img/mh.png"
+highlightjs = true
+highlightjsVersion = "9.11.0"
+highlightjsCDN = "https://cdn.bootcss.com"
+highlightjsLang = ["r", "yaml"]
+highlightjsTheme = "github"
+progressively = true
+# share = true
+latestpostcount = 3
+github = "mfherman"
+email = "mfherman@gmail.com"
+linkedin = "matt-herman-research"
+# twitter = "example"
+# facebook = "facebook_id"
+social_banner = "img/mh.png"
+usesmallsummarycard = true
+posts_navigation = true
+# issoHost = "comments.domain.tld:1234"
+# githubRepo = "githubUsername/repositoryName"
+small_banner_logo = false
+noreadingtime = true
+rssLimit = 10
+
+[params.colors]
+# identifier = "#527fc1f"
+# identifier_dark = "#1a3152"
+# trivial = "#6a7a8b"
+# foreground = "#181d2a"
+# background = "#f9f9f9"
+# background_dark = "#282a36"
+# code = "#87a5d2"
+# type = "#97d28b"
+# special = "#ffcb8d"
+# value = "#96c2d7"
+# statement = "#ff8e91"

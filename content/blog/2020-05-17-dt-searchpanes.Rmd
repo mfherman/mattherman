@@ -31,7 +31,11 @@ This is the first in a series of posts that describes small enhancements that yo
 
 I'm not sure how many posts there will be in the series, but since I've recently been creating a number of these dashboard and sites at [work](https://www1.nyc.gov/site/acs/about/data-analysis.page), I hope to document many of the tips and tricks I'm learning along the way.
 
-In this series, I'm going to use data from the [gapminder package](https://github.com/jennybc/gapminder), so if you don't have it installed:
+Here are the other posts in the series:
+
+[**Tip 2: Order string dates by an invisible DataTable column**](/blog/dt_sort_secondary)
+
+In this post, I'm going to use data from the [gapminder package](https://github.com/jennybc/gapminder), so if you don't have it installed:
 
 ```{r eval=FALSE}
 install.packages("gapminder")

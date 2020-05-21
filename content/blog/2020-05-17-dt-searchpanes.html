@@ -35,7 +35,9 @@ tags:
 
 <p>This is the first in a series of posts that describes small enhancements that you can add to your R Markdown documents and dashboards to give them a more “interactive feel” while not relying on Shiny for that interactivity. All of the interactions I will describe are executed on the client-side and can be implemented with a static, self-contained HTML file. This is a nice feature because it means you can host your documents using a simple static webhost like <a href="https://pages.github.com/">GitHub Pages</a> or <a href="https://www.netlify.com/blog/2016/10/27/a-step-by-step-guide-deploying-a-static-site-or-single-page-app/">Netlify</a>. Additionally if you don’t have access to an internal Shiny server at work (like me!) you can email these files around as attachments.</p>
 <p>I’m not sure how many posts there will be in the series, but since I’ve recently been creating a number of these dashboard and sites at <a href="https://www1.nyc.gov/site/acs/about/data-analysis.page">work</a>, I hope to document many of the tips and tricks I’m learning along the way.</p>
-<p>In this series, I’m going to use data from the <a href="https://github.com/jennybc/gapminder">gapminder package</a>, so if you don’t have it installed:</p>
+<p>Here are the other posts in the series:</p>
+<p><a href="/blog/dt_sort_secondary"><strong>Tip 2: Order string dates by an invisible DataTable column</strong></a></p>
+<p>In this post, I’m going to use data from the <a href="https://github.com/jennybc/gapminder">gapminder package</a>, so if you don’t have it installed:</p>
 <pre class="r"><code>install.packages(&quot;gapminder&quot;)</code></pre>
 <p>If you’ve created tables in R Markdown documents for HTML or Shiny, you’ve probably used the <a href="https://rstudio.github.io/DT/">DT package</a> which is an R interface to the <a href="https://datatables.net/">DataTables JavaScript library</a>. I won’t give an introduction to DT, but the best place to start is the <a href="https://rstudio.github.io/DT/">DT website</a>, which has lots of examples.</p>
 <p><strong>Tip 1: Use SearchPanes to select rows in a DataTable</strong></p>

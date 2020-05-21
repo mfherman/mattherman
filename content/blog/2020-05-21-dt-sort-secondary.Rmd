@@ -1,0 +1,76 @@
+---
+title: "Custom sorting of strings in DT with an invisible column"
+author:
+date: "2020-05-21"
+slug: dt_sort_secondary
+draft: false
+tags:
+  - rstats
+  - dt
+  - datatables
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  cache = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  collapse = TRUE,
+  echo = TRUE,
+  dpi = 180,
+  fig.retina = 2
+  )
+
+options(width = 77, dplyr.width = 77)
+
+library(DT)
+library(gapminder)
+```
+
+This is the second in a series of posts that describes small enhancements that you can add to your R Markdown documents and dashboards to give them a more "interactive feel" while not relying on Shiny for that interactivity. All of the interactions I will describe are executed on the client-side and can be implemented with a static, self-contained HTML file. Here are the other posts in the series:
+
+[**Tip 1: Use SearchPanes to select rows in a DataTable**](/blog/dt_searchpanes)
+
+In this post, we will be using the [DT package](https://rstudio.github.io/DT/) with data from the [nycflights13 package](https://github.com/hadley/nycflights13), so if you don't have it installed:
+
+```{r eval=FALSE}
+install.packages("nycflights13")
+```
+
+**Tip 2: Order string dates by an invisible DataTable column**
+
+If you have a column of dates you want to display in a DataTable, you may want to format those columns in a format that users are more used to seeing. For example, instead of 2013-01-13, an American viewer may be more comfortable with 1/13/2013 or Jan 13, 2013. These string conversations are straightforward, but the problem becomes allowing a user to sort by these string date columns in the DataTable.
+
+```{r}
+library(DT)
+library(dplyr)
+library(nycflights13)
+
+jfk_weather <- weather %>% 
+  filter(origin == "JFK", hour == 12) %>% 
+  mutate(date = format(time_hour, "%b %d, %Y")) %>% 
+  select(date, temp, dewp, humid, wind_speed)
+
+datatable(jfk_weather)
+```
+<br>
+<br>
+The table looks okay to start because it is in the same order as the input data frame, but click on the date column to sort. April is the first month and September is the last month, alphabetically speaking. As far as DataTables knows, this is a normal character column and so it sorts accordingly.
+
+In order to have nicely formatted dates AND the correct sort order, you need to tell DataTable to **use a secondary column to order the date column**.
+
+One nice way to do this, if your input data is already sorted in the correct chronological order, is to use the row names of your input data frame as the sort order for the date column. This works because we are using a data frame that *does not* have row names set and so the row names turn out to be (`"1"`, `"2"`, `"3"`, ...). If we set the DataTable to order by the row names when we sort the date column, everything will work out as expected.
+
+```{r}
+datatable(
+  jfk_weather,
+  options = list(columnDefs = list(list(orderData = 0, targets = 1),
+                                   list(visible = FALSE, targets = 0)))
+  )
+```
+
+In English, set the `orderData` option to the column index of the row names (`0`) for the date column index (`1`), and then set the row names column to be invisible (this part isn't necessary for the sorting to work, but we don't need really to see those row names).
+
+Check it out, the date column now sorts correctly!
+
+You don't need to use the row names as your sort order column. Set any other column in your data to be a sort order by using the appropriate column index in the `orderData` argument and then choose whether or not to hide that column with the `visible` option.

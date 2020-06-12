@@ -41,9 +41,7 @@ fathom('trackPageview');
 <!-- / Fathom -->
 {{ end }}
 
-{{ if .Site.Params.googleAnalyticsEnabled }}
 {{ template "_internal/google_analytics_async.html" . }}
-{{ end }}
 
 <script>
   window.onload = function() {

@@ -8,4 +8,4 @@ I like using the [R programming language](https://en.wikipedia.org/wiki/R_(progr
 
 Before I began working at ACS, I spent five years recording oral histories with [StoryCorps](https://storycorps.org/) and helped to open a butcher shop and salumeria called [Ends Meat](https://www.endsmeatnyc.com/). I received my B.A. in American Studies from Columbia University in 2006 and my M.S. in Applied Social Research from Hunter College in 2018. Check out [my resume](pdf/mh-resume.pdf) for more details.
 
-I live in Katonah, NY with my wife, Jaime, daughter, Maya, and cats, Isabella, Chuck, and Walter. Get in touch at [mfherman@gmail.com](mailto:mfherman@gmail.com).
+I live in Katonah, NY with my wife, Jaime, daughters, Maya and Tessie, and cats, Isabella and Walter. Get in touch at [mfherman@gmail.com](mailto:mfherman@gmail.com).
